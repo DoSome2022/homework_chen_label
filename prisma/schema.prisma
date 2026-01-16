@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String?
+  email          String?        @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?        // hashed
+  role           Role           @default(CUSTOMER)
+  customerType   CustomerType?  @default(NORMAL)
+  isSubscribed   Boolean        @default(false)
+
+  accounts       Account[]
+  sessions       Session[]
+  projects       Project[]
+  assignedProjects Project[]    @relation("AssignedEmployee")
+  messages       Message[]      
+  reports        Report[]
+  conversations  Conversation[] 
+  broadcasts     Broadcast[]    
+  salesActivities SalesActivity[]
+
+  // ── 新增這一行 ──
+  customerContacts CustomerContact?   // 對應 CustomerContact.customer
+  tags CustomerTag[] // 客戶擁有的標籤
+
+  createdAt      DateTime       @default(now())
+}
+
+model CustomerContact {
+  id           String   @id @default(cuid())
+  customerId   String   @unique
+  customer     User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name         String
+  company      String?
+  email        String?
+  address      String?
+  contactPerson String?
+  phone        String?
+  extraInfo    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+  CUSTOMER
+  SYSTEM     // ← 新增這一行
+}
+
+enum CustomerType {
+  NORMAL
+  POTENTIAL
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+
+  // 外鍵欄位（可選，支援關聯）
+  categoryId  String?
+  colorId     String?
+  sizeId      String?
+
+  // 關聯（可選，如果需要雙向查詢）
+  category    Category? @relation(fields: [categoryId], references: [id])
+  color       Color?    @relation(fields: [colorId], references: [id])
+  size        Size?     @relation(fields: [sizeId], references: [id])
+
+  // 精選與封存（這兩個是您目前最需要的布林欄位）
+  isFeatured  Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+
+  // 圖片（支援多張，一對多 relation）
+  images      ProductImage[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+}
+
+model Color {
+  id        String    @id @default(cuid())
+  name      String
+  value     String    // 例如 #ff0000
+  products  Product[]
+}
+
+model Size {
+  id        String    @id @default(cuid())
+  name      String
+  value     String    // 例如 S, M, L
+  products  Product[]
+}
+
+// 圖片模型（一對多）
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String?
+  status              ProjectStatus @default(PENDING)
+  customerId          String
+  customer            User     @relation(fields: [customerId], references: [id])
+  deadline    DateTime?
+  assignedEmployeeId  String?
+  assignedEmployee    User?    @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id])
+  quotes              Quote[]
+  reports             Report[]
+  createdAt           DateTime @default(now())
+  isCompleted Boolean @default(false)  // 新增：是否完成
+}
+
+enum ProjectStatus {
+  PENDING
+  ASSIGNED
+  COMPLETED
+}
+
+model Quote {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+  amount    Float
+  details   String?
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  customerId String
+  customer   User      @relation(fields: [customerId], references: [id])
+  messages   Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderRole     Role
+  content        String
+  imageUrl       String?
+  createdAt      DateTime     @default(now())
+
+  // ▼▼▼ 請新增以下兩行 (對應 User.messages) ▼▼▼
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  // ▲▲▲ 請新增以上兩行 ▲▲▲
+  
+  senderType     SenderType?   // 新增欄位
+}
+
+enum SenderType {
+  USER
+  SYSTEM
+}
+
+model Broadcast {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  imageUrl  String?
+  videoUrl  String?   // ← 新增這一行
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  scheduledAt DateTime?  // ← 新增：排程發布時間（null 表示立即發布）
+}
+
+model Report {
+  id        String     @id @default(cuid())
+  type      ReportType
+  title     String     // 新增標題欄位，便於管理
+  content   String
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id])
+  projectId String?
+  project   Project?   @relation(fields: [projectId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum ReportType {
+  SALES
+  PRODUCT
+  AMOUNT
+  BROADCAST
+  EMPLOYEE
+}
+
+model SalesActivity {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  imageUrl  String?
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  color       String?  // 可選：如 #FF0000，用來顯示標籤顏色
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customers   CustomerTag[] // 多對多關聯
+}
+
+model CustomerTag {
+  customerId String
+  tagId      String
+  customer   User @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tag        Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([customerId, tagId])
+}
