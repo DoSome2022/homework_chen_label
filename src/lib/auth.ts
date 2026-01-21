@@ -199,7 +199,7 @@ import type { Adapter } from "next-auth/adapters"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db) as Adapter,
-
+ trustHost: true, // 显式告诉 NextAuth 信任当前主机
   session: { strategy: "jwt" },
 
   providers: [
@@ -207,6 +207,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientId: process.env.AUTH_GOOGLE_ID!,
       clientSecret: process.env.AUTH_GOOGLE_SECRET!,
       
+      allowDangerousEmailAccountLinking: true,   // ← 新增這一行
       // 可選：如果你想要更多用戶資訊
       profile(profile) {
         return {

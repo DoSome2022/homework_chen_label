@@ -1,3 +1,5 @@
+// src/lib/actions/auth.ts
+
 'use server'
 
 
@@ -52,9 +54,10 @@ export async function loginAction(formData: FormData) {
   await signIn("credentials", {
     email,
     password,
-    redirect: true,
-    redirectTo: "/dashboard",
+    redirect: false,
+    // redirectTo: "/dashboard",
   })
+   redirect("/dashboard");
 }
 // 登出
 export async function logoutAction() {
@@ -63,8 +66,8 @@ export async function logoutAction() {
 
 // 建立初始 Admin（僅限首次使用，之後可刪除此頁面）
 export async function createInitialAdmin(formData: FormData) {
-  const existingAdmin = await db.user.findFirst({ where: { role: "ADMIN" } })
-  if (existingAdmin) throw new Error("Admin 用戶已存在")
+  // const existingAdmin = await db.user.findFirst({ where: { role: "ADMIN" } })
+  // if (existingAdmin) throw new Error("Admin 用戶已存在")
 
   const name = formData.get("name") as string
   const email = formData.get("email") as string
