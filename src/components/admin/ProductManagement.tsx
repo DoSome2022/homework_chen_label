@@ -68,37 +68,41 @@ export function ProductManagement() {
 // ProductManagement.tsx 的 onSubmit
 // 假設你用的是 react-hook-form 的 handleSubmit
 const onSubmit = async (data: ProductFormValues) => {
-  const formData = new FormData();
-  formData.append("name", data.name);
-  formData.append("price", data.price.toString());
-  
-  // --- 關鍵修改 ---
-  // 如果值是 "null_value" 或 undefined，就不 append 到 FormData，
-  // 或者 append 空字串，讓後端轉成 null
-  if (data.categoryId && data.categoryId !== "null_value") {
-    formData.append("categoryId", data.categoryId);
-  } else {
-    formData.append("categoryId", ""); // 傳空字串
-  }
+  try {
+    // 整理資料
+    const formattedData = {
+      ...data,
+      price: Number(data.price),
+  categoryId: (data.categoryId === "cat1" || !data.categoryId) ? null : data.categoryId,
+  colorId: (data.colorId === "col1" || !data.colorId) ? null : data.colorId,
+  sizeId: (data.sizeId === "sz1" || !data.sizeId) ? null : data.sizeId,
+    };
 
-  // 對 colorId 和 sizeId 做同樣處理
-  if (data.colorId && data.colorId !== "null_value") {
-    formData.append("colorId", data.colorId);
-  } else {
-    formData.append("colorId", "");
-  }
+    // --- 修改開始 ---
+    console.log("前端送出的資料:", formattedData);
 
-  if (data.sizeId && data.sizeId !== "null_value") {
-    formData.append("sizeId", data.sizeId);
-  } else {
-    formData.append("sizeId", "");
-  }
+    // 呼叫 Server Action 並等待結果
+    const result = await createProduct(formattedData);
 
-  // ... 處理圖片等其他欄位 ...
-  
-  // 呼叫 Server Action
-  await createProduct(formData);
+    // 檢查是否有錯誤
+    if (result.error) {
+      console.error("後端回傳錯誤:", result.error);
+      alert(`建立失敗: ${result.error}`); // 或者用 toast.error
+      return; // 發生錯誤就停在這裡，不要關閉視窗
+    }
+
+    // 成功才執行這些
+    console.log("建立成功:", result.success);
+    setOpen(false);
+    form.reset();
+    // --- 修改結束 ---
+
+  } catch (error) {
+    console.error("前端未知錯誤:", error);
+    alert("發生意外錯誤");
+  }
 };
+
 
 
   return (

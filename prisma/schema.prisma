@@ -109,9 +109,9 @@ model Product {
   sizeId      String?
 
   // 關聯（可選，如果需要雙向查詢）
-  category    Category? @relation(fields: [categoryId], references: [id])
-  color       Color?    @relation(fields: [colorId], references: [id])
-  size        Size?     @relation(fields: [sizeId], references: [id])
+  // category    Category? @relation(fields: [categoryId], references: [id])
+  // color       Color?    @relation(fields: [colorId], references: [id])
+  // size        Size?     @relation(fields: [sizeId], references: [id])
 
   // 精選與封存（這兩個是您目前最需要的布林欄位）
   isFeatured  Boolean   @default(false)
@@ -125,25 +125,25 @@ model Product {
 }
 
 
-model Category {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-}
+// model Category {
+//   id        String    @id @default(cuid())
+//   name      String    @unique
+//   products  Product[]
+// }
 
-model Color {
-  id        String    @id @default(cuid())
-  name      String
-  value     String    // 例如 #ff0000
-  products  Product[]
-}
+// model Color {
+//   id        String    @id @default(cuid())
+//   name      String
+//   value     String    // 例如 #ff0000
+//   products  Product[]
+// }
 
-model Size {
-  id        String    @id @default(cuid())
-  name      String
-  value     String    // 例如 S, M, L
-  products  Product[]
-}
+// model Size {
+//   id        String    @id @default(cuid())
+//   name      String
+//   value     String    // 例如 S, M, L
+//   products  Product[]
+// }
 
 // 圖片模型（一對多）
 model ProductImage {
