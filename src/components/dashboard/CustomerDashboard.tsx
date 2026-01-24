@@ -1,176 +1,3 @@
-// // src/components/dashboard/CustomerDashboard.tsx
-// import { auth } from "@/lib/auth"
-// import db from "@/lib/db"
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Button } from "@/components/ui/button"
-// import { toggleBroadcastSubscription } from "@/lib/actions/client"
-// import Image from "next/image"
-
-// export async function CustomerDashboard() {
-//   const session = await auth()
-//   if (!session?.user?.id) {
-//     return <div>未登入</div>
-//   }
-
-//   const customerId = session.user.id
-
-//   // 查詢客戶資料（包含訂閱狀態）
-//   const customer = await db.user.findUnique({
-//     where: { id: customerId },
-//     select: {
-//       isSubscribed: true,
-//     },
-//   })
-
-//   const now = new Date()
-
-//   const [myApplicationsCount, latestPublishedCount, allPublishedBroadcasts] = await Promise.all([
-//     // 我的申請數
-//     db.project.count({ where: { customerId } }),
-
-//     // 最新已發布廣播數（最近 7 天內已發布的）
-//     db.broadcast.count({
-//       where: {
-//         OR: [
-//           { scheduledAt: null }, // 立即發布
-//           { scheduledAt: { lte: now } }, // 已到時間
-//         ],
-//         createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
-//       },
-//     }),
-
-//     // 如果已訂閱，取得所有已發布的廣播完整資料
-//     customer?.isSubscribed
-//       ? db.broadcast.findMany({
-//           where: {
-//             OR: [
-//               { scheduledAt: null }, // 立即發布
-//               { scheduledAt: { lte: now } }, // 已到時間
-//             ],
-//           },
-//           orderBy: { createdAt: "desc" },
-//           include: { author: { select: { name: true } } },
-//         })
-//       : [],
-//   ])
-
-//   return (
-//     <div className="p-8 space-y-8">
-//       <h1 className="text-3xl font-bold">我的儀表板</h1>
-
-//       <div className="grid gap-6 md:grid-cols-3">
-//         <CardMetric title="我的申請" value={myApplicationsCount.toString()} />
-
-//         <CardMetric title="最新廣播" value={`${latestPublishedCount} 則`} />
-
-//         {/* 訂閱按鈕 */}
-//         <Card>
-//           <CardHeader className="pb-2">
-//             <CardTitle className="text-sm font-medium text-muted-foreground">
-//               廣播訂閱
-//             </CardTitle>
-//           </CardHeader>
-//           <CardContent className="flex items-center justify-between">
-//             <div className="text-3xl font-bold">
-//               {customer?.isSubscribed ? "已訂閱" : "未訂閱"}
-//             </div>
-//             <form
-//               action={async () => {
-//                 "use server"
-//                 await toggleBroadcastSubscription()
-//               }}
-//             >
-//               <Button
-//                 type="submit"
-//                 variant={customer?.isSubscribed ? "outline" : "default"}
-//               >
-//                 {customer?.isSubscribed ? "取消訂閱" : "訂閱"}
-//               </Button>
-//             </form>
-//           </CardContent>
-//         </Card>
-//       </div>
-
-//       {/* 已訂閱才顯示已發布的廣播列表 */}
-//       {customer?.isSubscribed ? (
-//         <section>
-//           <h2 className="text-2xl font-semibold mb-4">所有廣播內容</h2>
-//           <div className="grid gap-6">
-//             {allPublishedBroadcasts.length === 0 ? (
-//               <p className="text-muted-foreground">目前無已發布的廣播內容</p>
-//             ) : (
-//               allPublishedBroadcasts.map((broadcast) => (
-//                 <Card key={broadcast.id}>
-//                   <CardHeader>
-//                     <CardTitle>{broadcast.title}</CardTitle>
-//                     <p className="text-sm text-muted-foreground">
-//                       由 {broadcast.author.name || "系統"} 發布於{" "}
-//                       {new Date(broadcast.createdAt).toLocaleString("zh-TW")}
-//                       {broadcast.scheduledAt && (
-//                         <span className="ml-2 text-xs text-blue-600">
-//                           （排程發布於 {new Date(broadcast.scheduledAt).toLocaleString("zh-TW")})
-//                         </span>
-//                       )}
-//                     </p>
-//                   </CardHeader>
-//                   <CardContent>
-//                     <p className="whitespace-pre-wrap">{broadcast.content}</p>
-//                     {broadcast.imageUrl && (
-//                       <div className="mt-4">
-//                         <Image
-//                           src={broadcast.imageUrl}
-//                           alt={broadcast.title}
-//                           width={600}
-//                           height={400}
-//                           className="rounded-lg object-cover"
-//                         />
-//                       </div>
-//                     )}
-//                     {broadcast.videoUrl && (
-//                       <div className="mt-4">
-//                         <iframe
-//                           width="100%"
-//                           height="315"
-//                           src={broadcast.videoUrl}
-//                           title="廣播影片"
-//                           frameBorder="0"
-//                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-//                           allowFullScreen
-//                         />
-//                       </div>
-//                     )}
-//                   </CardContent>
-//                 </Card>
-//               ))
-//             )}
-//           </div>
-//         </section>
-//       ) : (
-//         <p className="text-muted-foreground text-center py-8">
-//           訂閱廣播後即可查看所有已發布內容
-//         </p>
-//       )}
-//     </div>
-//   )
-// }
-
-// // CardMetric 保持不變
-// function CardMetric({ title, value }: { title: string; value: string }) {
-//   return (
-//     <Card>
-//       <CardHeader className="pb-2">
-//         <CardTitle className="text-sm font-medium text-muted-foreground">
-//           {title}
-//         </CardTitle>
-//       </CardHeader>
-//       <CardContent>
-//         <div className="text-3xl font-bold">{value}</div>
-//       </CardContent>
-//     </Card>
-//   )
-// }
-
-// src/components/dashboard/CustomerDashboard.tsx
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -219,14 +46,12 @@ export function CustomerDashboard({ initialData }: CustomerDashboardProps) {
       
       // 如果從未訂閱變成訂閱，重新獲取廣播列表
       if (newIsSubscribed && allPublishedBroadcasts.length === 0) {
-        // 這裡可以添加獲取廣播列表的邏輯
-        // 或者重新加載頁面
+        // 這裡簡單重整頁面來獲取最新數據，或者你可以選擇實作 fetch API 來局部更新
         window.location.reload()
       }
       
     } catch (error) {
       console.error("切換訂閱失敗:", error)
-      // 可以添加錯誤提示
       alert("訂閱操作失敗，請稍後再試")
     } finally {
       setLoading(false)
@@ -338,20 +163,30 @@ export function CustomerDashboard({ initialData }: CustomerDashboardProps) {
                             {broadcast.author.name || "系統"}
                           </span>
                           <span>•</span>
+                          
+                          {/* 修正部分 1: 發布時間 */}
                           <span className="inline-flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            發布於 {formatDateTime(broadcast.createdAt)}
+                            發布於&nbsp;
+                            <span suppressHydrationWarning>
+                                {formatDateTime(broadcast.createdAt)}
+                            </span>
                           </span>
+
                           {broadcast.scheduledAt && (
                             <>
                               <span>•</span>
+                              {/* 修正部分 2: 排程時間 */}
                               <span className="inline-flex items-center text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                排程發布
+                                排程發布&nbsp;
+                                <span suppressHydrationWarning>
+                                    {formatDateTime(broadcast.scheduledAt)}
+                                </span>
                               </span>
                             </>
                           )}

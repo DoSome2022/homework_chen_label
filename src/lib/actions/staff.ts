@@ -6,10 +6,10 @@ import { revalidatePath } from "next/cache"
 import db from "../db"
 import { uploadToOSS } from "@/lib/oss"
 import {
+  activitySchema,
   createProjectSchema,
   createQuoteSchema,
   createStaffReportSchema,
-  // 移除未使用的：sendMessageSchema, createSalesActivitySchema, z
 } from "@/lib/schemas/staff"
 
 // 共用驗證函式（不變）
@@ -171,33 +171,103 @@ export async function createStaffReport(formData: FormData) {
   revalidatePath("/staff/workspace")
 }
 
-export async function createSalesActivity(formData: FormData) {
+
+
+
+
+
+export async function createSalesActivity(
+  arg1: any,        // 可能是 prevState，也可能是 formData (如果沒用 useFormState)
+  arg2?: FormData   // 如果用了 useFormState，這個才是 formData
+) {
   const session = await auth()
-  if (session?.user?.role !== "EMPLOYEE") throw new Error("Unauthorized")
-
-  const title = formData.get("title") as string
-  const content = formData.get("content") as string
-  const imageFile = formData.get("image")
-
-  // 同樣使用型別守衛取代 any
-  const hasValidImage = imageFile instanceof File && imageFile.size > 0;
-
-  let imageUrl: string | null = null
-  if (hasValidImage) {
-    imageUrl = await uploadToOSS(imageFile as File, "sales-activities")
+  
+  if (!session?.user || (session.user.role !== "EMPLOYEE" && session.user.role !== "ADMIN")) {
+    return { error: "權限不足" }
   }
 
-  await db.salesActivity.create({
-    data: {
-      title,
-      content,
-      imageUrl,
-      authorId: session.user.id,
-    },
-  })
+  // --- 修正重點開始 ---
+  // 判斷 formData 到底在哪個參數裡
+  let formData: FormData;
 
-  revalidatePath("/staff/workspace")
+  if (arg1 instanceof FormData) {
+    // 情況 1: 直接在 <form action={...}> 使用，Next.js 只傳入一個參數
+    formData = arg1;
+  } else if (arg2 instanceof FormData) {
+    // 情況 2: 使用了 useFormState，Next.js 傳入 (state, formData)
+    formData = arg2;
+  } else {
+    // 情況 3: 發生意外，沒有收到資料
+    return { error: "系統錯誤：未接收到表單資料" };
+  }
+  // --- 修正重點結束 ---
+
+  // 2. 獲取資料
+  const rawType = formData.get("type")?.toString() || "業務紀錄"
+  const rawDate = formData.get("date")?.toString() || new Date().toISOString().split('T')[0]
+  
+  const generatedTitle = `${rawType} - ${rawDate}`
+
+  const rawData = {
+    title: formData.get("title") || generatedTitle,
+    content: formData.get("content"),
+  }
+
+  const validatedFields = activitySchema.safeParse(rawData)
+
+  if (!validatedFields.success) {
+    return {
+      error: "輸入資料驗證失敗",
+      fieldErrors: validatedFields.error.flatten().fieldErrors,
+    }
+  }
+
+  const { title, content } = validatedFields.data
+
+  // 3. 處理圖片上傳
+  const imageFile = formData.get("image")
+  const hasValidImage = 
+    imageFile && 
+    typeof imageFile === "object" && 
+    (imageFile as any).size > 0;
+
+  let imageUrl: string | null = null
+  
+  if (hasValidImage) {
+    try {
+      const file = imageFile as unknown as File
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const extension = file.name.split('.').pop() || 'jpg'
+      const filename = `activities/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`
+      
+      imageUrl = await uploadToOSS(buffer as any, filename)
+    } catch (err) {
+      console.error("圖片上傳失敗:", err)
+      return { error: "圖片上傳失敗" }
+    }
+  }
+
+  // 4. 寫入資料庫
+  try {
+    await db.salesActivity.create({
+      data: {
+        title: title,
+        content: content,
+        imageUrl: imageUrl,
+        authorId: session.user.id,
+      },
+    })
+
+    revalidatePath("/dashboard/staff")
+    return { success: true }
+    
+  } catch (error) {
+    console.error("建立紀錄失敗:", error)
+    return { error: "資料庫寫入失敗" }
+  }
 }
+
+
 
 // 員工刪除自己的報告或銷售活動
 export async function deleteStaffItem(id: string, type: "REPORT" | "SALES_ACTIVITY") {

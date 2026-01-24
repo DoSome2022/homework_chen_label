@@ -10,43 +10,43 @@ import z from "zod"
 
 export async function createBroadcast(formData: FormData) {
   const session = await auth()
-  if (session?.user?.role !== "ADMIN") throw new Error("Unauthorized")
+  if (session?.user?.role !== "ADMIN") throw new Error("未授權")
 
-  const title = formData.get("title") as string
-  const content = formData.get("content") as string
-  const videoUrl = formData.get("videoUrl") as string
-  const scheduledAtStr = formData.get("scheduledAt") as string
-  const imageFile = formData.get("image") as File | null
+  const title       = formData.get("title")       as string
+  const content     = formData.get("content")     as string
+  const videoUrl    = formData.get("videoUrl")    as string
+  const scheduledAt = formData.get("scheduledAt") as string | null
+  const imageFile   = formData.get("image")       as File | null
 
+  // 這裡已經使用修正後的 schema
   const parsed = broadcastSchema.parse({
     title,
     content,
     videoUrl,
-    scheduledAt: scheduledAtStr,
+    scheduledAt,           // 可以直接傳 null 或 ""
   })
 
   let imageUrl: string | null = null
-  if (imageFile && imageFile.size > 0) {
+  if (imageFile?.size && imageFile.size > 0) {
     imageUrl = await uploadToOSS(imageFile)
   }
 
-  const scheduledAt = parsed.scheduledAt ? new Date(parsed.scheduledAt) : null
-
-  await db.broadcast.create({
+  const broadcast = await db.broadcast.create({
     data: {
       title: parsed.title,
       content: parsed.content,
       videoUrl: parsed.videoUrl || null,
       imageUrl,
-      scheduledAt,  // ← 新增
-      authorId: session.user.id,
+      scheduledAt: parsed.scheduledAt ? new Date(parsed.scheduledAt) : null,
+      authorId: session.user.id!,
     },
   })
 
   revalidatePath("/dashboard/admin/broadcasts")
-  revalidatePath("/dashboard") // 客戶端儀表板也要重新驗證
-}
+  revalidatePath("/dashboard")
 
+  return broadcast // 可選：回傳建立的資料
+}
 export async function updateBroadcast(id: string, formData: FormData) {
   const session = await auth()
   if (session?.user?.role !== "ADMIN") {
