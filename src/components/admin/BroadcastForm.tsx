@@ -33,7 +33,7 @@ type BroadcastFormValues = {
   title: string
   content: string
   videoUrl?: string
-  scheduledAt?: string // ISO 字串
+  scheduledAt?: string | null 
 }
 
 type BroadcastFormProps = {

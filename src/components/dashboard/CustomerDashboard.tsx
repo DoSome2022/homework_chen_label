@@ -31,10 +31,11 @@ interface CustomerDashboardProps {
 
 export function CustomerDashboard({ initialData }: CustomerDashboardProps) {
   const [isSubscribed, setIsSubscribed] = useState(initialData.isSubscribed)
-  const [allPublishedBroadcasts, setAllPublishedBroadcasts] = useState<Broadcast[]>(initialData.allPublishedBroadcasts)
+  // const [allPublishedBroadcasts, setAllPublishedBroadcasts] = useState<Broadcast[]>(initialData.allPublishedBroadcasts)
   const [loading, setLoading] = useState(false)
-  const [latestPublishedCount, setLatestPublishedCount] = useState(initialData.latestPublishedCount)
-
+  // const [latestPublishedCount, setLatestPublishedCount] = useState(initialData.latestPublishedCount)
+  const allPublishedBroadcasts = initialData.allPublishedBroadcasts;
+  const latestPublishedCount = initialData.latestPublishedCount;
   const handleToggleSubscription = async () => {
     try {
       setLoading(true)

@@ -1,30 +1,3 @@
-// // src/app/(dashboard)/page.tsx
-// import { auth } from "@/lib/auth";
-// import { redirect } from "next/navigation";
-// import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
-// import { StaffDashboard } from "@/components/dashboard/StaffDashboard";
-// import { CustomerDashboard } from "@/components/dashboard/CustomerDashboard";
-
-
-// export default async function DashboardPage() {
-//   const session = await auth();
-
-//   if (!session?.user) {
-//     redirect("/login");
-//   }
-
-//   const role = session.user.role;
-
-//   if (role === "ADMIN") {
-//     return <AdminDashboard />;
-//   } else if (role === "EMPLOYEE") {
-//     return <StaffDashboard />;
-//   } else if (role === "CUSTOMER") {
-//     return <CustomerDashboard />;
-//   }
-
-//   return <div className="p-8 text-center text-muted-foreground">無效角色，請聯絡系統管理員</div>;
-// }
 
 // src/app/(dashboard)/page.tsx
 import { auth } from "@/lib/auth";
@@ -98,7 +71,7 @@ export default async function DashboardPage() {
 
   } else if (role === "EMPLOYEE") {
     // 取得員工所需數據
-    const now = new Date();
+ 
     
     const projects = await db.project.findMany({
       where: { assignedEmployeeId: userId },

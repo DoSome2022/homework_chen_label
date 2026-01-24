@@ -34,11 +34,15 @@ interface ClientDetail {
   conversations?: Conversation[];
   // 如果需要，也可加入 projects 等其他欄位
 }
-
-// 定義 getClientDetail 返回的實際結構（可選，但有助於型別安全）
+interface Project {
+  id: string;
+  name?: string;
+  [key: string]: unknown; // 允許包含其他未定義的屬性
+}
+// [修改] 將 any[] 改為 Project[]
 interface GetClientDetailResponse {
-  client: ClientDetail & { projects?: any[] }; // projects 可選，視需求加入細節
-  projects?: any[]; // 頂層 projects
+  client: ClientDetail & { projects?: Project[] }; 
+  projects?: Project[]; 
 }
 
 interface PageProps {

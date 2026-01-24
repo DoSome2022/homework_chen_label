@@ -172,12 +172,16 @@ export async function createStaffReport(formData: FormData) {
 }
 
 
-
+type FormState = {
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+  success?: boolean;
+} | null;
 
 
 
 export async function createSalesActivity(
-  arg1: any,        // 可能是 prevState，也可能是 formData (如果沒用 useFormState)
+  arg1: FormState | FormData, // [修改] 這裡不再用 any
   arg2?: FormData   // 如果用了 useFormState，這個才是 formData
 ) {
   const session = await auth()
@@ -226,27 +230,29 @@ export async function createSalesActivity(
 
   // 3. 處理圖片上傳
   const imageFile = formData.get("image")
+  
+  // [修改] 優化檢查邏輯，避免使用 any
   const hasValidImage = 
-    imageFile && 
-    typeof imageFile === "object" && 
-    (imageFile as any).size > 0;
+    imageFile instanceof File && 
+    imageFile.size > 0;
 
   let imageUrl: string | null = null
   
   if (hasValidImage) {
     try {
-      const file = imageFile as unknown as File
-      const buffer = Buffer.from(await file.arrayBuffer())
-      const extension = file.name.split('.').pop() || 'jpg'
-      const filename = `activities/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`
+      const file = imageFile as File; // 既然是 File，就直接用
+      const extension = file.name.split('.').pop() || 'jpg';
+      const filename = `activities/${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
       
-      imageUrl = await uploadToOSS(buffer as any, filename)
+      // [修正] 不要轉成 Buffer，直接傳入 file
+      // 注意：這裡假設 uploadToOSS(file, filename) 接受 File 類型
+      imageUrl = await uploadToOSS(file, filename);
+
     } catch (err) {
-      console.error("圖片上傳失敗:", err)
-      return { error: "圖片上傳失敗" }
+      console.error("圖片上傳失敗:", err);
+      return { error: "圖片上傳失敗" };
     }
   }
-
   // 4. 寫入資料庫
   try {
     await db.salesActivity.create({

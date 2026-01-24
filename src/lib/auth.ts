@@ -301,7 +301,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true
     },
 
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account }) {
       console.log("=== JWT Callback ===")
       console.log("Provider:", account?.provider)
       console.log("Token before:", token)

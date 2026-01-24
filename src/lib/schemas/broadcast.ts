@@ -8,6 +8,7 @@ export const broadcastSchema = z.object({
 
   scheduledAt: z
     .union([z.string(), z.null(), z.undefined()])   // 先接受所有可能的「沒填」狀況
+    .optional() 
     .transform((val) => {
       // 各種沒填寫的狀況都轉成 null
       if (val == null) return null;
