@@ -22,7 +22,7 @@ export function CreateBroadcastDialog() {
       </DialogTrigger>
 
       {/* 關鍵：表單內容必須放在 DialogContent 內才會在對話框中顯示 */}
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         {/* <DialogHeader>
           <DialogTitle>新增廣播</DialogTitle>
         </DialogHeader> */}

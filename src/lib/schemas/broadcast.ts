@@ -5,7 +5,7 @@ export const broadcastSchema = z.object({
   title: z.string().min(1, { message: "標題為必填" }),
   content: z.string().min(5, { message: "內容至少需要 5 個字" }),
   videoUrl: z.string().url({ message: "請輸入有效的影片網址" }).optional().or(z.literal("")),
-
+  imageUrl: z.string().url({ message: "請輸入有效的圖片網址" }).optional().or(z.literal("")),
   scheduledAt: z
     .union([z.string(), z.null(), z.undefined()])   // 先接受所有可能的「沒填」狀況
     .optional() 

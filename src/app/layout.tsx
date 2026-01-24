@@ -5,7 +5,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"
 import { SessionProvider } from "next-auth/react"; // ← 新增這一行
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,10 +30,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-<SessionProvider>
+     
+        <SessionProvider>
           {children}
           <Toaster />
-        </SessionProvider>
+        </SessionProvider>          
+        
+
       </body>
     </html>
   );

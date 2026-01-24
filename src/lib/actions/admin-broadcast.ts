@@ -8,27 +8,48 @@ import db from "@/lib/db"
 import { broadcastSchema } from "@/lib/schemas/broadcast"
 import z from "zod"
 
+// src/lib/actions/admin-broadcast.ts
 export async function createBroadcast(formData: FormData) {
-  const session = await auth()
-  if (session?.user?.role !== "ADMIN") throw new Error("未授權")
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") throw new Error("未授權");
 
-  const title       = formData.get("title")       as string
-  const content     = formData.get("content")     as string
-  const videoUrl    = formData.get("videoUrl")    as string
-  const scheduledAt = formData.get("scheduledAt") as string | null
-  const imageFile   = formData.get("image")       as File | null
+  const title       = formData.get("title")       as string;
+  const content     = formData.get("content")     as string;
+  const videoUrl    = formData.get("videoUrl")    as string;
+  const scheduledAt = formData.get("scheduledAt") as string | null;
+  const imageFile   = formData.get("image")       as File | null;
 
-  // 這裡已經使用修正後的 schema
+  console.log("[createBroadcast] 收到檔案資訊：", {
+    hasImage: !!imageFile,
+    fileName: imageFile?.name,
+    fileSize: imageFile?.size,
+    fileType: imageFile?.type,
+  });
+
   const parsed = broadcastSchema.parse({
     title,
     content,
     videoUrl,
-    scheduledAt,           // 可以直接傳 null 或 ""
-  })
+    scheduledAt,
+  });
 
-  let imageUrl: string | null = null
-  if (imageFile?.size && imageFile.size > 0) {
-    imageUrl = await uploadToOSS(imageFile)
+  let imageUrl: string | null = null;
+
+  if (imageFile && imageFile.size > 0) {
+    try {
+      console.log("[createBroadcast] 開始上傳到 OSS，檔案大小：", imageFile.size);
+      imageUrl = await uploadToOSS(imageFile);
+      console.log("[createBroadcast] OSS 上傳成功，返回 URL：", imageUrl);
+    } catch (uploadError) {
+      console.error("[createBroadcast] OSS 上傳失敗：", uploadError);
+      // 決定是否要阻斷整個建立流程
+      // 選項A：拋錯，讓前端知道失敗（推薦）
+      throw new Error(`圖片上傳失敗：${uploadError instanceof Error ? uploadError.message : '未知錯誤'}`);
+      // 選項B：容錯，圖片失敗但廣播仍建立（imageUrl 保持 null）
+      // imageUrl = null;
+    }
+  } else {
+    console.log("[createBroadcast] 沒有收到有效圖片檔案");
   }
 
   const broadcast = await db.broadcast.create({
@@ -40,12 +61,17 @@ export async function createBroadcast(formData: FormData) {
       scheduledAt: parsed.scheduledAt ? new Date(parsed.scheduledAt) : null,
       authorId: session.user.id!,
     },
-  })
+  });
 
-  revalidatePath("/dashboard/admin/broadcasts")
-  revalidatePath("/dashboard")
+  console.log("[createBroadcast] 建立完成，返回資料：", {
+    id: broadcast.id,
+    imageUrl: broadcast.imageUrl,
+  });
 
-  return broadcast // 可選：回傳建立的資料
+  revalidatePath("/dashboard/admin/broadcasts");
+  revalidatePath("/dashboard");
+
+  return broadcast;
 }
 export async function updateBroadcast(id: string, formData: FormData) {
   const session = await auth()
