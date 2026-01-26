@@ -3,7 +3,7 @@
 
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useActionState, useEffect } from "react"
+import { useActionState, useEffect ,useRef} from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { useRouter } from "next/navigation"                    // ← 新增
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ContactFormInput, upsertCustomerContact } from "@/lib/actions/customerContact"
@@ -44,6 +45,9 @@ interface Props {
 
 export function EditContactDialog({ customerId, customerName, initialData }: Props) {
   const [state, formAction, isPending] = useActionState(upsertCustomerContact, {})
+
+const router = useRouter()
+  const dialogRef = useRef<HTMLButtonElement>(null)           // 用來控制觸發按鈕
 
   const form = useForm<ContactFormInput>({
     resolver: zodResolver(contactSchema),
@@ -73,6 +77,8 @@ export function EditContactDialog({ customerId, customerName, initialData }: Pro
   // 成功後自動關閉 Dialog（簡易方式）
   useEffect(() => {
     if (state.success) {
+      dialogRef.current?.click()   // 點擊 trigger button 會自動關閉（因為它是 toggle）
+      router.refresh()
       // 尋找目前開啟的 dialog 並觸發關閉
       const closeButton = document.querySelector(
         'button[data-state="open"] ~ button[aria-label="Close"]'
@@ -85,11 +91,16 @@ export function EditContactDialog({ customerId, customerName, initialData }: Pro
     }
   }, [state.success])
 
+const isCreateMode = initialData === null || initialData === undefined
+
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          {initialData ? "編輯聯絡資訊" : "設定聯絡資訊"}
+<DialogTrigger asChild>
+        <Button 
+          ref={dialogRef}
+          variant={isCreateMode ? "default" : "outline"}
+        >
+          {isCreateMode ? "設定聯絡資訊" : "編輯聯絡資訊"}
         </Button>
       </DialogTrigger>
 
@@ -223,8 +234,13 @@ export function EditContactDialog({ customerId, customerName, initialData }: Pro
               <p className="text-sm text-destructive text-center">{state.error}</p>
             )}
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => {}}>
+           <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => dialogRef.current?.click()}   // 明確關閉
+                disabled={isPending}
+              >
                 取消
               </Button>
               <Button type="submit" disabled={isPending}>

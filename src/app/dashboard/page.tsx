@@ -80,6 +80,7 @@ export default async function DashboardPage() {
         title: true,
         status: true,
         isCompleted: true,
+        deadline: true,           // 明確選擇 deadline 欄位
         customer: { 
           select: { 
             name: true,

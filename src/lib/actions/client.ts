@@ -81,10 +81,11 @@ export async function applyForProduct(formData: FormData) {
 
 // 2. 潛力客發送訊息（文字 + 圖片）
 // src/lib/actions/client.ts
+
+
 export async function sendCustomerMessage(formData: FormData) {
   const session = await auth()
 
-  // 修改權限檢查：允許員工或潛力客發送訊息
   const isAllowed =
     (session?.user?.role === "CUSTOMER" && session.user.customerType === "POTENTIAL") ||
     session?.user?.role === "EMPLOYEE"
@@ -93,18 +94,22 @@ export async function sendCustomerMessage(formData: FormData) {
     throw new Error("僅潛力客或員工可發送訊息")
   }
 
-  const senderId = session.user.id
+  const senderId = session.user.id!
   const senderRole = session.user.role === "EMPLOYEE" ? "EMPLOYEE" : "CUSTOMER"
 
   const conversationId = formData.get("conversationId") as string
-  const content = formData.get("content") as string | null
-  const imageFile = formData.get("image") as File | null
+  const content   = formData.get("content")  as string | null
+  const imageUrl  = formData.get("imageUrl") as string | null   // ← 只接收這個
 
-  if (!content?.trim() && (!imageFile || imageFile.size === 0)) {
+  // 驗證：至少要有文字或圖片
+  const hasContent = content && content.trim().length > 0
+  const hasImage   = imageUrl && imageUrl.trim().length > 0
+
+  if (!hasContent && !hasImage) {
     throw new Error("訊息內容與圖片不可同時為空")
   }
 
-  // 驗證此對話是否屬於自己
+  // 驗證對話存在
   const conversation = await db.conversation.findUnique({
     where: { id: conversationId },
     select: { customerId: true },
@@ -114,7 +119,7 @@ export async function sendCustomerMessage(formData: FormData) {
     throw new Error("對話不存在")
   }
 
-  // 額外驗證：員工只能發給自己負責的客戶
+  // 權限檢查
   if (senderRole === "EMPLOYEE") {
     const project = await db.project.findFirst({
       where: {
@@ -123,37 +128,29 @@ export async function sendCustomerMessage(formData: FormData) {
       },
       select: { id: true },
     })
-
-    if (!project) {
-      throw new Error("無權發送訊息至此對話")
-    }
+    if (!project) throw new Error("無權發送訊息至此對話")
   } else {
-    // 客戶只能發給自己的對話
     if (conversation.customerId !== senderId) {
       throw new Error("無權操作此對話")
     }
   }
 
-  let imageUrl: string | null = null
-  if (imageFile && imageFile.size > 0) {
-    const folder = `messages/${senderId}/${new Date().toISOString().split("T")[0]}`
-    imageUrl = await uploadToOSS(imageFile, folder)
-  }
-
+  // 建立訊息
   await db.message.create({
     data: {
       conversationId,
-      senderRole,  // 動態決定角色
-      content: content?.trim() || "",
-      imageUrl,
+      senderRole,
+      content: hasContent ? content.trim() : "",
+      imageUrl: hasImage ? imageUrl : null,
       userId: senderId,
     },
   })
 
   revalidatePath("/dashboard/client/messages")
   revalidatePath(`/staff/${conversation.customerId}`)
-}
 
+  return { success: true }
+}
 // 3. 訂閱/取消廣播/廣告權限
 export async function toggleBroadcastSubscription() {
   const session = await auth()

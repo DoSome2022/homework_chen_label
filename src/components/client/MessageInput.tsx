@@ -1,3 +1,4 @@
+// src/components/client/MessageInput.tsx
 'use client'
 
 import { useState } from "react"
@@ -10,47 +11,56 @@ export function MessageInput({ conversationId }: { conversationId: string }) {
   const [content, setContent] = useState("")
   const [imageUrl, setImageUrl] = useState<string | null>(null)
 
+  // 直接接收 ImageUploader 回傳的 URL 陣列（通常只取最後一張）
+  const handleImageChange = (urls: string[]) => {
+    // 只保留最後一張圖片（符合單一訊息單張圖的常見需求）
+    const latestUrl = urls[urls.length - 1] || null
+    setImageUrl(latestUrl)
+  }
+
   const handleSend = async () => {
+    // 至少要有文字或圖片才能送出
     if (!content.trim() && !imageUrl) return
 
     const formData = new FormData()
     formData.append("conversationId", conversationId)
     if (content.trim()) formData.append("content", content.trim())
-    if (imageUrl) formData.append("imageUrl", imageUrl)  // 傳送圖片 URL
+    if (imageUrl) formData.append("imageUrl", imageUrl)
 
-    await sendCustomerMessage(formData)
-
-    // 重置表單
-    setContent("")
-    setImageUrl(null)
+    try {
+      await sendCustomerMessage(formData)
+      // 清空表單
+      setContent("")
+      setImageUrl(null)
+    } catch (err) {
+      console.error("發送訊息失敗", err)
+      alert("發送失敗，請稍後再試")
+    }
   }
 
   return (
-    <div className="flex items-end gap-2 mt-4">
-      {/* 使用 onChange 取得最新上傳的圖片 URL */}
-      <ImageUploader
-        value={imageUrl ? [imageUrl] : []}                    // 顯示目前一張圖片
-        onChange={(urls) => {
-          // 只取最後一張（因為訊息通常只附一張）
-          const latestUrl = urls[urls.length - 1]
-          setImageUrl(latestUrl || null)
-        }}
-        onRemove={() => setImageUrl(null)}                    // 移除圖片時清空狀態
-      />
+    <div className="flex flex-col gap-3 mt-4">
+      <div className="flex items-end gap-2">
+        <ImageUploader
+          value={imageUrl ? [imageUrl] : []}
+          onChange={handleImageChange}           // ← 型別正確
+          onRemove={() => setImageUrl(null)}
+        />
 
-      <Input
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="輸入訊息..."
-        className="flex-1"
-      />
+        <Input
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={imageUrl ? "可為圖片加說明文字（選填）" : "輸入訊息..."}
+          className="flex-1"
+        />
 
-      <Button 
-        onClick={handleSend} 
-        disabled={!content.trim() && !imageUrl}
-      >
-        送出
-      </Button>
+        <Button
+          onClick={handleSend}
+          disabled={!content.trim() && !imageUrl}
+        >
+          送出
+        </Button>
+      </div>
     </div>
   )
 }

@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { loginAction } from "@/lib/actions/auth"
-import {  useSession } from "next-auth/react"   // ← 新增 useSession
+import {  signIn, useSession } from "next-auth/react"   // ← 新增 useSession
 import { useRouter } from "next/navigation"             // ← 新增 useRouter
 import { useEffect, useState } from "react"             // ← 修改 useState 為 useEffect
 import { Separator } from "@/components/ui/separator"  // 可選：用來做分隔線
-import { signIn } from "@/lib/auth"
+// import { signIn } from "@/lib/auth"
 
 
 
@@ -83,6 +83,7 @@ const { data: session, status } = useSession()
         redirect: true,             // 自動處理重導（v5 推薦）
       })
     } catch (err) {
+      console.log("Error:", err)
       setError("Google 登入失敗，請稍後再試")
       console.error(err)
     } finally {

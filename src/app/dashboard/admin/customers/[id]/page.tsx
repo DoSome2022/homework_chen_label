@@ -165,9 +165,16 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                 </div>
               </div>
             ) : (
-              <div className="py-10 text-center text-muted-foreground">
-                目前尚未設定任何聯絡資訊
-              </div>
+<div className="py-10 text-center text-muted-foreground space-y-6">
+      <p>目前尚未設定任何聯絡資訊</p>
+      
+      {/* 新增按鈕放在這裡 */}
+      <EditContactDialog
+        customerId={customer.id}
+        customerName={customer.name || "未命名客戶"}
+        initialData={null}  // null 表示新增模式
+      />
+    </div>
             )}
           </ContactCardContent>
         </ContactCard>
