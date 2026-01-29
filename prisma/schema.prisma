@@ -58,6 +58,7 @@ model User {
   // ── 新增這一行 ──
   customerContacts CustomerContact?   // 對應 CustomerContact.customer
   tags CustomerTag[] // 客戶擁有的標籤
+  phoneOtps      PhoneOtp[]     // 一對多，可選（因為不是每個 User 都有 OTP 記錄）
 
   createdAt      DateTime       @default(now())
 }
@@ -275,4 +276,17 @@ model CustomerTag {
   tag        Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([customerId, tagId])
+}
+
+model PhoneOtp {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  code      String   // 6 位數字
+  userId    String?  // 若已有帳號則關聯，首次註冊可為 null
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  expiresAt DateTime
+  attempts  Int      @default(0) // 防暴力破解
+  createdAt DateTime @default(now())
+
+  @@index([phone, expiresAt])
 }

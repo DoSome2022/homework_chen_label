@@ -16,6 +16,19 @@ interface PageProps {
   params: Promise<{ id: string }>
 }
 
+function cleanPhoneNumber(phone: string): string {
+  // 移除所有非數字字符
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // 如果開頭有 0 且不是國際號碼常見情況，可視需求移除
+  // 但大多數情況下前端不需特別處理 + 號，因為 replace(/\D/g, '') 已移除
+  
+  // 如果你儲存時包含 +852，會變成 852... 正確
+  // 如果儲存的是 0912345678（台灣常見），則需要前端或後端補 +886
+  
+  return cleaned;
+}
+
 export default async function CustomerDetailPage({ params }: PageProps) {
   const { id } = await params
 
@@ -107,16 +120,36 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                     </div>
                   )}
 
-                  {/* 電話 */}
-                  {customer.customerContacts.phone && (
-                    <div className="flex items-start gap-3">
-                      <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">電話</p>
-                        <p className="mt-1">{customer.customerContacts.phone}</p>
-                      </div>
-                    </div>
-                  )}
+
+
+{customer.customerContacts.phone && (
+  <div className="flex items-start gap-3">
+    <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
+    <div className="flex-1">
+      <p className="text-sm font-medium text-muted-foreground">電話</p>
+      <div className="mt-1 flex items-center gap-3 flex-wrap">
+        <span>{customer.customerContacts.phone}</span>
+
+        {/* WhatsApp 按鈕 */}
+        <a
+          href={`https://wa.me/${cleanPhoneNumber(customer.customerContacts.phone)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-green-600 text-white hover:bg-green-700 transition-colors"
+          title="使用 WhatsApp 聯絡"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4 fill-current"
+          >
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.198-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.074-.149-.669-.719-.916-.952-.246-.235-.496-.235-.669-.099-.173.149-.547.695-.916 1.093-.37.398-.633.697-.694.816-.061.117-.473.273-.822.406-.35.133-.472.198-.549.168-.076-.03-.549-.198-.916-.347-.367-.149-.668-.224-.917-.099-.25.124-.398.372-.446.546-.049.174-.058 1.095.025 1.668.084.573.383 1.198.833 1.823.45.625 1.066 1.198 1.833 1.648.767.45 1.668.669 2.569.888.901.219 1.802.198 2.569-.099.767-.297 1.668-.669 2.336-1.198.668-.529 1.2-1.198 1.567-1.897.367-.699.496-1.397.496-1.996 0-.599-.099-1.198-.496-1.697z" />
+          </svg>
+          WhatsApp
+        </a>
+      </div>
+    </div>
+  </div>
+)}
 
                   {/* 地址（跨欄） */}
                   {customer.customerContacts.address && (

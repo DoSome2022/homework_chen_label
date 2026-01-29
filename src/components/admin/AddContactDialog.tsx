@@ -75,21 +75,20 @@ const router = useRouter()
   })
 
   // 成功後自動關閉 Dialog（簡易方式）
-  useEffect(() => {
-    if (state.success) {
-      dialogRef.current?.click()   // 點擊 trigger button 會自動關閉（因為它是 toggle）
-      router.refresh()
-      // 尋找目前開啟的 dialog 並觸發關閉
-      const closeButton = document.querySelector(
-        'button[data-state="open"] ~ button[aria-label="Close"]'
-      ) as HTMLButtonElement | null
-      if (closeButton) {
-        closeButton.click()
-      }
-      // 可選：在此處加入 sonner toast 通知成功
-      // toast.success("聯絡資訊已成功儲存")
+useEffect(() => {
+  if (state.success) {
+    dialogRef.current?.click();
+    router.refresh();
+
+    // 可選：尋找並關閉 dialog 的邏輯（視需求保留）
+    const closeButton = document.querySelector(
+      'button[data-state="open"] ~ button[aria-label="Close"]'
+    ) as HTMLButtonElement | null;
+    if (closeButton) {
+      closeButton.click();
     }
-  }, [state.success])
+  }
+}, [state.success, router]);  // ← 加入 router
 
 const isCreateMode = initialData === null || initialData === undefined
 

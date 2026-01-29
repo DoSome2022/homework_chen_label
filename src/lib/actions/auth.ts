@@ -2,7 +2,8 @@
 
 'use server'
 
-
+import { randomInt } from "crypto";
+import { sendOtpSms } from "@/lib/sms";
 import {  signIn, signOut } from "@/lib/auth"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
@@ -94,4 +95,116 @@ export async function createInitialAdmin(formData: FormData) {
 
   // 這一行通常不會執行到，因為 redirect: true 會直接跳轉
   return { success: true }
+}
+
+
+// ── 請求 OTP ──
+export async function requestPhoneOtp(formData: FormData) {
+  const phone = formData.get("phone") as string;
+
+  if (!phone || phone.length < 8) {
+    throw new Error("請輸入有效的電話號碼");
+  }
+
+  // 產生 6 位 OTP
+  const code = randomInt(100000, 999999).toString();
+
+  // 設定 5 分鐘過期
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+  // 查找或建立 OTP 記錄（upsert）
+  await db.phoneOtp.upsert({
+    where: { phone },
+    update: {
+      code,
+      expiresAt,
+      attempts: 0,
+    },
+    create: {
+      phone,
+      code,
+      expiresAt,
+    },
+  });
+
+  // 發送簡訊
+  const sent = await sendOtpSms(phone, code);
+  if (!sent) {
+    throw new Error("簡訊發送失敗，請稍後再試");
+  }
+
+  // 回傳成功（前端進入第二階段）
+  return { success: true, phone };
+}
+
+// ── 驗證 OTP 並登入 ──
+export async function verifyPhoneOtp(formData: FormData) {
+  const phone = formData.get("phone") as string;
+  const code = formData.get("code") as string;
+
+  if (!phone || !code || code.length !== 6) {
+    throw new Error("驗證碼格式錯誤");
+  }
+
+  const otpRecord = await db.phoneOtp.findUnique({
+    where: { phone },
+    include: { user: true },
+  });
+
+  if (!otpRecord) {
+    throw new Error("無效的驗證請求");
+  }
+
+  if (otpRecord.attempts >= 5) {
+    throw new Error("驗證次數過多，請重新請求驗證碼");
+  }
+
+  if (otpRecord.expiresAt < new Date()) {
+    throw new Error("驗證碼已過期");
+  }
+
+  if (otpRecord.code !== code) {
+    // 增加嘗試次數
+    await db.phoneOtp.update({
+      where: { phone },
+      data: { attempts: { increment: 1 } },
+    });
+    throw new Error("驗證碼錯誤");
+  }
+
+  // 驗證成功 ── 刪除 OTP 記錄（一次性使用）
+  await db.phoneOtp.delete({ where: { phone } });
+
+  let user = otpRecord.user;
+
+  // 如果是新用戶 → 自動註冊（可選）
+  if (!user) {
+    user = await db.user.create({
+      data: {
+        // phone 建議存到 CustomerContact 或 User 自訂欄位
+        role: "CUSTOMER",
+        customerType: "NORMAL",
+        // name/email 可之後補
+      },
+    });
+
+    // 可在此建立 CustomerContact 並填入 phone
+    await db.customerContact.create({
+      data: {
+        customerId: user.id,
+        name: "新用戶", // 之後可讓用戶補資料
+        phone,
+      },
+    });
+  }
+
+  // 重要：使用 signIn("credentials") 建立 session
+  // 但因為我們沒有 password，這裡要 hack 一點
+  await signIn("credentials", {
+    phone,           // 自訂欄位
+    otp: code,       // 只是為了通過 authorize，這裡實際不比對
+    redirect: false,
+  });
+
+  redirect("/dashboard");
 }
