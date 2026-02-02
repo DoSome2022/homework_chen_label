@@ -136,7 +136,6 @@ export async function requestPhoneOtp(formData: FormData) {
   // 回傳成功（前端進入第二階段）
   return { success: true, phone };
 }
-
 // ── 驗證 OTP 並登入 ──
 export async function verifyPhoneOtp(formData: FormData) {
   const phone = formData.get("phone") as string;
@@ -164,7 +163,6 @@ export async function verifyPhoneOtp(formData: FormData) {
   }
 
   if (otpRecord.code !== code) {
-    // 增加嘗試次數
     await db.phoneOtp.update({
       where: { phone },
       data: { attempts: { increment: 1 } },
@@ -177,34 +175,35 @@ export async function verifyPhoneOtp(formData: FormData) {
 
   let user = otpRecord.user;
 
-  // 如果是新用戶 → 自動註冊（可選）
   if (!user) {
     user = await db.user.create({
       data: {
-        // phone 建議存到 CustomerContact 或 User 自訂欄位
         role: "CUSTOMER",
         customerType: "NORMAL",
-        // name/email 可之後補
       },
     });
 
-    // 可在此建立 CustomerContact 並填入 phone
     await db.customerContact.create({
       data: {
         customerId: user.id,
-        name: "新用戶", // 之後可讓用戶補資料
+        name: "新用戶（手機註冊）",
         phone,
       },
     });
   }
 
-  // 重要：使用 signIn("credentials") 建立 session
-  // 但因為我們沒有 password，這裡要 hack 一點
-  await signIn("credentials", {
-    phone,           // 自訂欄位
-    otp: code,       // 只是為了通過 authorize，這裡實際不比對
+  // 使用 signIn 建立 session，讓 NextAuth 處理 token 與 cookie
+  const signInResult = await signIn("credentials", {
+    phone,               // 傳 phone 給 authorize 辨識
+    otp: code,           // 傳 otp（雖然不會用到比對）
+    verified: "true",    // 自訂旗標，告訴 authorize 已通過驗證
     redirect: false,
   });
 
-  redirect("/dashboard");
+  if (signInResult?.error) {
+    console.error("[verifyPhoneOtp] signIn error:", signInResult.error);
+    throw new Error("登入失敗，請稍後再試");
+  }
+
+  return { success: true };
 }
