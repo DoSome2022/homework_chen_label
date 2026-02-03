@@ -29,15 +29,20 @@ const { data: session, status } = useSession()
       {/* 主內容區 */}
       <main className="w-3/4 lg:w-2/4 mx-auto px-10 py-12">
         {/* 產品圖片展示 */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8 relative group">
           <Image 
             src="/m1.png"
             alt="標籤樣式1" 
-              width={600}  // 原始圖片寬度
-  height={600} // 原始圖片高度
+            width={600}  // 原始圖片寬度
+              height={600} // 原始圖片高度
   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" // 響應式尺寸
-            className="w-full h-auto object-cover aspect-square"
+            className="w-full h-auto object-cover aspect-square group-hover:opacity-50"
           />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-60">
+            <p className="text-white text-lg font-semibold p-4">
+              我們提供「一對一」報價服務，跟進您每一個要求！
+            </p>
+          </div>
           <Image 
             src="/m2.png"
             alt="標籤樣式2" 
