@@ -8,3 +8,8 @@ admin 加了建立聯絡資訊
 2/2/2026
 
 加驗證碼登入
+
+9/5/2026
+
+改了session undefined問題
+改了client 的message 問題

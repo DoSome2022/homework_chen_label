@@ -13,25 +13,29 @@ import { ArrowUpDown, Pencil } from "lucide-react"  // ← 新增 Pencil 圖示�
 import { useRouter, useSearchParams } from "next/navigation"
 import { deleteProduct } from "@/lib/actions/admin-product"
 import { Trash2 } from "lucide-react"
-import { Product } from "@prisma/client"
+import { Product , ProductImage} from "@prisma/client"
 import { EditProductDialog } from "./EditProductDialog"
 import { useState } from "react"
 
+
+interface ProductWithImages extends Pick<Product,
+  | "id"
+  | "name"
+  | "description"
+  | "price"
+  | "createdAt"
+  | "updatedAt"
+  | "categoryId"
+  | "colorId"
+  | "sizeId"
+  | "isFeatured"
+  | "isArchived"
+> {
+  images: ProductImage[]    // ← 改為直接使用 Prisma 生成的類型
+}
 interface ProductTableProps {
-  products: Pick<
-    Product,
-    | "id"
-    | "name"
-    | "description"
-    | "price"
-    | "createdAt"
-    | "updatedAt"
-    | "categoryId"
-    | "colorId"
-    | "sizeId"
-    | "isFeatured"
-    | "isArchived"
-  >[]
+  // products: Pick<...>[]   ← 刪掉這行
+  products: ProductWithImages[]  // ← 改為新的類型
   currentSort: "name" | "price" | "createdAt"
   currentOrder: "asc" | "desc"
 }
@@ -70,6 +74,7 @@ export function ProductTable({ products, currentSort, currentOrder }: ProductTab
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>圖片</TableHead> 
           <TableHead>
             <Button
               variant="ghost"
@@ -100,6 +105,18 @@ export function ProductTable({ products, currentSort, currentOrder }: ProductTab
 
           return (
             <TableRow key={product.id}>
+                            {/* ← 新增：顯示第一張圖片 */}
+              <TableCell>
+                {product.images?.[0] ? (
+                  <img
+                    src={product.images[0].url}
+                    alt={product.name}
+                    className="w-14 h-14 object-cover rounded border"
+                  />
+                ) : (
+                  <span className="text-gray-400 text-xs">無</span>
+                )}
+              </TableCell>
               <TableCell className="font-medium">{product.name}</TableCell>
               <TableCell className="max-w-xs truncate">
                 {product.description || "-"}

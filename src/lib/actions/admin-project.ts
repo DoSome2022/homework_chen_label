@@ -54,6 +54,10 @@ export async function assignEmployeeToProject(projectId: string, employeeId: str
       where: { id: project.customerId },
       data: { customerType: "POTENTIAL" },
     })
+        // ★★★ 新增：讓該客戶的 session 失效（強迫重新登入）★★★
+    await db.session.deleteMany({
+      where: { userId: project.customerId },
+    });
   }
 
   // ★★★ 新增：自動建立 Conversation（如果客戶還沒有） ★★★

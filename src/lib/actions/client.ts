@@ -57,12 +57,20 @@ export async function applyForProduct(formData: FormData) {
   const userId = session.user.id
 
   // 建立待指派項目
-  await db.project.create({
+  const project = await db.project.create({
     data: {
       title: parsed.title,
       description: parsed.description || null,
       customerId: userId,
       status: "PENDING",
+    },
+  })
+
+    // ⬇️ 自動建立該任務的對話框
+  await db.conversation.create({
+    data: {
+      customerId: userId,
+      projectId: project.id,  // 綁定任務
     },
   })
 

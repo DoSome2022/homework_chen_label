@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { updateProduct } from "@/lib/actions/admin-product";
+import { ProductImage } from "@prisma/client";   // ← 加入這行
 
 // 定義可編輯的產品型別（與 ProductTable 傳遞的 Pick 一致）
 type EditableProduct = {
@@ -34,6 +35,8 @@ type EditableProduct = {
   sizeId: string | null;
   isFeatured: boolean;
   isArchived: boolean;
+  images: ProductImage[];
+  
   // 若 updateProduct 需要 stock / imageUrl / status，可在查詢時補齊，或在 action 處理
   // stock?: number;
   // imageUrl?: string | null;

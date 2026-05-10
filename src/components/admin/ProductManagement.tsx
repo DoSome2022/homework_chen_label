@@ -24,7 +24,7 @@ const mockCategories = [
 ];
 
 const mockColors = [
-  { id: "col1", name: "紅色", value: "#ff0000" },
+  { id: "col1", name: "黑色", value: "#ff0000" },
   { id: "col2", name: "藍色", value: "#0000ff" },
 ];
 

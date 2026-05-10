@@ -167,6 +167,10 @@ model Project {
   assignedEmployee    User?    @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id])
   quotes              Quote[]
   reports             Report[]
+
+
+  conversation        Conversation?  // 反向關聯
+
   createdAt           DateTime @default(now())
   isCompleted Boolean @default(false)  // 新增：是否完成
 }
@@ -190,6 +194,11 @@ model Conversation {
   id        String    @id @default(cuid())
   customerId String
   customer   User      @relation(fields: [customerId], references: [id])
+
+  // ⬇️ 新增以下兩行
+  projectId  String?    @unique    // 一個任務只會有一個對話
+  project    Project?   @relation(fields: [projectId], references: [id])
+
   messages   Message[]
 }
 

@@ -47,7 +47,8 @@ export async function createProjectForClient(formData: FormData) {
 
   await validateEmployeeAccess(parsed.clientId)
 
-  await db.project.create({
+  // 建立任務
+  const project = await db.project.create({
     data: {
       title: parsed.title,
       description: parsed.description || null,
@@ -56,6 +57,19 @@ export async function createProjectForClient(formData: FormData) {
       assignedEmployeeId: (await auth())!.user!.id,
     },
   })
+  // ⬇️ 檢查是否已有對話（避免重複建立）
+  const existingConv = await db.conversation.findUnique({
+    where: { projectId: project.id },
+  })
+  if (!existingConv) {
+    await db.conversation.create({
+      data: {
+        customerId: parsed.clientId,
+        projectId: project.id,
+      },
+    })
+  }
+  
 
   revalidatePath(`/staff/${parsed.clientId}`)
   revalidatePath("/staff/my-clients")

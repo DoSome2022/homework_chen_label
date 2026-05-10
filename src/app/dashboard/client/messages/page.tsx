@@ -2,122 +2,197 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation"; // 修正：在 Client Component 中推薦使用 useRouter
+import { useRouter } from "next/navigation";
 import { MessageInput } from "@/components/client/MessageInput";
 import Image from "next/image";
 import { getConversations } from "@/lib/actions/conversation";
 
-// 1. 定義資料結構接口 (Interface) 以替代 any
 interface Message {
   id: string;
   content: string | null;
   imageUrl: string | null;
-  senderRole: string; // 或具體枚舉 "CUSTOMER" | "ADMIN"
+  senderRole: string;
   createdAt: Date | string;
+}
+
+interface Project {
+  id: string;
+  title: string;
+  status: string;
+  assignedEmployee: { id: string; name: string } | null;
 }
 
 interface Conversation {
   id: string;
+  projectId: string;
+  project: Project;
   messages: Message[];
 }
 
 export default function MessagesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  
-  // 2. 使用具體類型替代 any[]
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 3. 使用 useCallback 包裹 fetchConversations
-  // 這樣這個函數引用就穩定了，可以安全地放入 useEffect 的依賴陣列中
-  const fetchConversations = useCallback(async () => {
+  // Redirect 檢查
+  useEffect(() => {
     if (status === "loading") return;
-    
-    // 注意：redirect() 主要用於 Server Component。
-    // 在 Client Component 中，雖然 redirect() 有時能用，但 router.push() 更標準且不易報錯。
     if (!session?.user) {
       router.push("/dashboard/client/products");
-      return;
     }
+  }, [status, session, router]);
 
-    if (session.user.role !== "CUSTOMER" || session.user.customerType !== "POTENTIAL") {
-      router.push("/dashboard/client/products");
-      return;
-    }
+  // 取得所有對話
+  const fetchConversations = useCallback(async () => {
+    if (status === "loading") return;
 
     try {
       const data = await getConversations();
-      // 確保 data 符合 Conversation[] 類型，如果不確定後端返回什麼，這裡可能需要轉型或檢查
-      setConversations(data as unknown as Conversation[]); 
+      const convs = data as unknown as Conversation[];
+      setConversations(convs);
+
+      // 預設選取第一個對話
+      if (convs.length > 0 && !activeConversationId) {
+        setActiveConversationId(convs[0].id);
+      }
     } catch (error) {
       console.error("載入對話失敗:", error);
     } finally {
       setLoading(false);
     }
-  }, [status, session, router]); // 依賴項
+  }, [status, activeConversationId]);
 
   useEffect(() => {
     fetchConversations();
-
-    // 每 8 秒自動更新
     const interval = setInterval(fetchConversations, 8000);
-
     return () => clearInterval(interval);
-  }, [fetchConversations]); // 4. 這裡現在只需要依賴 fetchConversations
+  }, [fetchConversations]);
+
+  // 找到當前活躍的對話
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
 
   if (status === "loading" || loading) {
     return <div className="p-8 text-center">載入對話中...</div>;
   }
 
-  // 簡單檢查，雖然上面有 router.push，但在跳轉發生前避免渲染錯誤內容
   if (!session?.user) {
-    return null; 
+    return null;
   }
 
-  return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-3xl font-bold">我的對話</h1>
+  console.log("data:", conversations, "-- End -- ");
 
-      {conversations.length === 0 ? (
-        <p className="text-muted-foreground text-center py-12">尚未有對話</p>
-      ) : (
-        // 5. 在 map 中使用具體類型
-        conversations.map((conv: Conversation) => (
-          <div key={conv.id} className="border rounded-lg p-6">
-            {conv.messages.map((msg: Message) => (
-              <div
-                key={msg.id}
-                className={`mb-4 ${msg.senderRole === "CUSTOMER" ? "text-right" : "text-left"}`}
-              >
-                <div
-                  className={`inline-block max-w-[80%] p-3 rounded-lg ${
-                    msg.senderRole === "CUSTOMER" ? "bg-primary text-primary-foreground" : "bg-muted"
+  return (
+    <div className="flex h-[calc(100vh-4rem)]">
+      {/* ========== 左側：任務列表 ========== */}
+      <div className="w-80 border-r overflow-y-auto flex-shrink-0">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-bold">我的任務</h2>
+        </div>
+
+        {conversations.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">尚未有任何任務</p>
+        ) : (
+          <ul className="divide-y">
+            {conversations.map((conv) => (
+              <li key={conv.id}>
+                <button
+                  onClick={() => setActiveConversationId(conv.id)}
+                  className={`w-full text-left p-4 hover:bg-muted/50 transition-colors ${
+                    activeConversationId === conv.id ? "bg-muted" : ""
                   }`}
                 >
-                  {/* 處理 content 可能為 null 的情況 */}
-                  {msg.content || ""}
-                  
-                  {msg.imageUrl && (
-                    <Image 
-                      src={msg.imageUrl} 
-                      alt="附件" 
-                      width={200} // 必須指定寬度 (Next.js Image 要求)
-                      height={200} // 必須指定高度 (Next.js Image 要求)
-                      className="mt-2 max-w-full rounded h-auto" // h-auto 保持比例
-                    />
+                  <p className="font-medium truncate">{conv.project.title}</p>
+                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${
+                      conv.project.status === "PENDING" ? "bg-yellow-100 text-yellow-800" :
+                      conv.project.status === "ASSIGNED" ? "bg-blue-100 text-blue-800" :
+                      "bg-green-100 text-green-800"
+                    }`}>
+                      {conv.project.status === "PENDING" ? "待指派" :
+                       conv.project.status === "ASSIGNED" ? "進行中" : "已完成"}
+                    </span>
+                    {conv.project.assignedEmployee && (
+                      <span>專員：{conv.project.assignedEmployee.name}</span>
+                    )}
+                  </div>
+                  {/* 未讀訊息數（可後續擴充） */}
+                  {conv.messages.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {conv.messages.length} 則訊息
+                    </p>
                   )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(msg.createdAt).toLocaleString()}
-                </p>
-              </div>
+                </button>
+              </li>
             ))}
+          </ul>
+        )}
+      </div>
 
-            <MessageInput conversationId={conv.id} />
+      {/* ========== 右側：當前任務的對話框 ========== */}
+      <div className="flex-1 flex flex-col">
+        {!activeConversation ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground">
+            {conversations.length > 0 ? "請選擇一個任務" : "尚未有任何任務"}
           </div>
-        ))
-      )}
+        ) : (
+          <>
+            {/* 對話標題 */}
+            <div className="p-4 border-b bg-muted/30">
+              <h3 className="font-bold">{activeConversation.project.title}</h3>
+              {activeConversation.project.assignedEmployee && (
+                <p className="text-sm text-muted-foreground">
+                  專員：{activeConversation.project.assignedEmployee.name}
+                </p>
+              )}
+            </div>
+
+            {/* 訊息列表 */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {activeConversation.messages.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  尚未有對話，發送第一則訊息吧
+                </p>
+              ) : (
+                activeConversation.messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.senderRole === "CUSTOMER" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[70%] p-3 rounded-lg ${
+                        msg.senderRole === "CUSTOMER"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      {msg.content && <p>{msg.content}</p>}
+                      {msg.imageUrl && (
+                        <Image
+                          src={msg.imageUrl}
+                          alt="附件"
+                          width={200}
+                          height={200}
+                          className="mt-2 max-w-full rounded h-auto"
+                        />
+                      )}
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(msg.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* 輸入框 */}
+            <div className="border-t p-4">
+              <MessageInput conversationId={activeConversation.id} />
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

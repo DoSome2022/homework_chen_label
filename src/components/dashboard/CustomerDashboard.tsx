@@ -70,6 +70,24 @@ export function CustomerDashboard({ initialData }: CustomerDashboardProps) {
     })
   }
 
+  // --- 新增：YouTube 網址轉換函數 ---
+function getYouTubeEmbedUrl(url: string) {
+  if (!url) return '';
+  // 匹配常見的 YouTube 網址格式
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+
+  // 如果成功抓到 ID (11個字元)，返回嵌入網址
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}`;
+  }
+  
+  // 為了避免錯誤，如果轉換失敗但看起來像網址，還是回傳原值(雖然可能無法顯示)
+  // 或者是可以回傳 null 讓 UI 顯示錯誤狀態
+  return url;
+}
+// --------------------------------
+
   return (
     <div className="p-8 space-y-8">
       <h1 className="text-3xl font-bold">我的儀表板</h1>
@@ -227,7 +245,7 @@ export function CustomerDashboard({ initialData }: CustomerDashboardProps) {
                           <iframe
                             width="100%"
                             height="400"
-                            src={broadcast.videoUrl}
+                            src={getYouTubeEmbedUrl(broadcast.videoUrl || "")} // ✅ 這裡加上轉換函數
                             title={`廣播影片 - ${broadcast.title}`}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -337,3 +355,4 @@ function CardMetric({ title, value }: { title: string; value: string }) {
     </Card>
   )
 }
+

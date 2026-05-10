@@ -5,8 +5,13 @@ import db from "@/lib/db"
 
 export default async function PublicProductsPage() {
   const products = await db.product.findMany({
+    include:{
+      images: true,
+    },
     orderBy: { createdAt: "desc" },
   })
+
+
 
   return (
     <div className="container mx-auto py-12 px-4">
