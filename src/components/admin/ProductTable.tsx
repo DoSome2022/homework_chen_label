@@ -31,9 +31,16 @@ interface ProductWithImages extends Pick<Product,
   | "sizeId"
   | "isFeatured"
   | "isArchived"
+  // ⭐ 新增成本欄位
+  | "costPrice"
+  | "materialCost"
+  | "laborCost"
+  | "otherCost"
+  | "supplier"
 > {
-  images: ProductImage[]    // ← 改為直接使用 Prisma 生成的類型
+  images: ProductImage[]
 }
+
 interface ProductTableProps {
   // products: Pick<...>[]   ← 刪掉這行
   products: ProductWithImages[]  // ← 改為新的類型

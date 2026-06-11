@@ -251,7 +251,6 @@ export default function RegisterPage() {
 
   return (
     <>
-      <Nav />
       <div className="min-h-screen bg-white text-gray-800 py-8">
         <main className="max-w-2xl mx-auto px-6">
           {/* ─── 頁面標題 ─── */}

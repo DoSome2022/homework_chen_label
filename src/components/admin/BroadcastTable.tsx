@@ -12,6 +12,9 @@ import { Broadcast } from "@prisma/client"
 import { toast } from "sonner"
 import {  useTransition } from "react"
 import { BroadcastSendLogDialog } from "./BroadcastSendLogDialog"
+import { togglePinBroadcast } from "@/lib/actions/admin-broadcast"
+import { Pin, PinOff } from "lucide-react"
+
   // ✅ 新增
 
 type BroadcastWithAuthorAndLogs = Broadcast & {
@@ -45,33 +48,38 @@ const sendStatusConfig = {
 export function BroadcastTable({ broadcasts }: { broadcasts: BroadcastWithAuthorAndLogs[] }) {
   const [isPending, startTransition] = useTransition()
 
-  const handleAction = async (action: string, id: string) => {
-    startTransition(async () => {
-      try {
-        switch (action) {
-          case "publish":
-            await publishBroadcast(id)
-            toast.success("已發布，正在發送通知...")
-            break
-          case "pause":
-            await pauseBroadcast(id)
-            toast.success("已暫停推送")
-            break
-          case "resume":
-            await resumeBroadcast(id)
-            toast.success("已恢復推送")
-            break
-          case "archive":
-            if (!confirm("確定要封存此廣播？")) return
-            await archiveBroadcast(id)
-            toast.success("已封存")
-            break
-        }
-      } catch {
-        toast.error("操作失敗")
+const handleAction = async (action: string, id: string) => {
+  startTransition(async () => {
+    try {
+      switch (action) {
+        case "publish":
+          await publishBroadcast(id)
+          toast.success("已發布，正在發送通知...")
+          break
+        case "pause":
+          await pauseBroadcast(id)
+          toast.success("已暫停推送")
+          break
+        case "resume":
+          await resumeBroadcast(id)
+          toast.success("已恢復推送")
+          break
+        case "archive":
+          if (!confirm("確定要封存此廣播？")) return
+          await archiveBroadcast(id)
+          toast.success("已封存")
+          break
+        // ⭐ 新增
+        case "togglePin":
+          await togglePinBroadcast(id)
+          toast.success("已更新顯示狀態")
+          break
       }
-    })
-  }
+    } catch {
+      toast.error("操作失敗")
+    }
+  })
+}
 
   // ✅ 計算發送統計
   const getSendStats = (broadcast: BroadcastWithAuthorAndLogs) => {
@@ -287,6 +295,26 @@ export function BroadcastTable({ broadcasts }: { broadcasts: BroadcastWithAuthor
                   {broadcast.status !== "ARCHIVED" && (
                     <EditBroadcastDialog broadcast={broadcast} />
                   )}
+
+                  {/* ⭐ 置頂按鈕 */}
+<Button
+  variant="ghost"
+  size="sm"
+  className={`h-8 w-8 p-0 ${
+    broadcast.isPinned 
+      ? 'text-yellow-500 hover:text-yellow-700' 
+      : 'text-gray-400 hover:text-gray-600'
+  }`}
+  onClick={() => handleAction("togglePin", broadcast.id)}
+  disabled={isPending}
+  title={broadcast.isPinned ? "取消在客戶端顯示" : "在客戶端顯示此廣播"}
+>
+  {broadcast.isPinned ? (
+    <Pin className="h-4 w-4 fill-current" />
+  ) : (
+    <PinOff className="h-4 w-4" />
+  )}
+</Button>
 
                   {/* 刪除按鈕（只有草稿和封存可刪） */}
                   {(broadcast.status === "DRAFT" || broadcast.status === "ARCHIVED") && (

@@ -174,22 +174,30 @@ import { auth } from "@/lib/auth"
 import db from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { productSchema } from "../schemas/product"
 // import { Prisma } from "@prisma/client"
 
 // 若未來需要完整表單驗證，可在此定義（目前先移除未使用的 productSchema）
 // 若確定要用，可改為 export const createProductSchema = z.object({...})
 // --- 在這裡定義 formSchema ---
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(), // 或 min(1) 看您的需求
-  images: z.object({ url: z.string() }).array(),
-  price: z.coerce.number().min(1),
-  categoryId: z.string().optional().nullable(), // 允許為空
-  colorId: z.string().optional().nullable(), // 允許為空
-  sizeId: z.string().optional().nullable(),  // 允許為空
-  isFeatured: z.boolean().default(false).optional(),
-  isArchived: z.boolean().default(false).optional(),
+  name: z.string().min(1, "請輸入產品名稱"),
+  price: z.number().min(0, "價格不可小於 0"),
+  description: z.string().optional(),
+  images: z.array(z.object({ url: z.string().url() })).min(1, "請至少上傳一張圖片"),
+  categoryId: z.string().min(1, "請選擇分類"),
+  colorId: z.string().min(1, "請選擇顏色"),
+  sizeId: z.string().min(1, "請選擇尺寸"),
+  isFeatured: z.boolean(),
+  isArchived: z.boolean(),
+  // ⭐ 新增成本欄位（全部可選）
+  costPrice: z.number().optional(),
+  materialCost: z.number().optional(),
+  laborCost: z.number().optional(),
+  otherCost: z.number().optional(),
+  supplier: z.string().optional(),
 });
+
 // ----------------------------
 const sanitizeId = (id: string | null | undefined) => {
   if (!id || id === "null" || id === "null_value" || id === "cat1" || id === "col1" || id === "sz1" || id.trim() === "") {
@@ -198,66 +206,113 @@ const sanitizeId = (id: string | null | undefined) => {
   return id;
 };
 
-export async function createProduct(values: z.infer<typeof formSchema>) {
-  console.log("--- 開始執行 createProduct (String 模式) ---");
+// export async function createProduct(values: z.infer<typeof formSchema>) {
+//   console.log("--- 開始執行 createProduct (String 模式) ---");
 
-  // 1. Zod 驗證
-  const validatedFields = formSchema.safeParse(values);
+//   // 1. Zod 驗證
+//   const validatedFields = formSchema.safeParse(values);
 
+//   if (!validatedFields.success) {
+//     console.error("2. Zod 驗證失敗:", validatedFields.error);
+//     return { error: "欄位驗證失敗" };
+//   }
+
+//   // 解構資料
+// const { 
+//   name, description, price, images, categoryId, 
+//   colorId, sizeId, isFeatured, isArchived,
+//   costPrice, materialCost, laborCost, otherCost, supplier,  // ⭐ 加入這行
+// } = validatedFields.data;
+
+//   try {
+//     // 3. 準備寫入 DB 的資料
+// const dbData = {
+//   name,
+//   description,
+//   price,
+//   isFeatured,
+//   isArchived,
+//   categoryId: sanitizeId(categoryId), 
+//   sizeId: sanitizeId(sizeId),
+//   colorId: sanitizeId(colorId),
+//   // ⭐ 新增成本欄位
+//   costPrice: costPrice ?? null,
+//   materialCost: materialCost ?? null,
+//   laborCost: laborCost ?? null,
+//   otherCost: otherCost ?? null,
+//   supplier: supplier ?? null,
+  
+//   images: {
+//     createMany: {
+//       data: [...images.map((image: { url: string }) => image)],
+//     },
+//   },
+// };
+
+//     console.log("3. 準備寫入 DB 的資料:", JSON.stringify(dbData, null, 2));
+
+//     // 4. 寫入資料庫
+//     const newProduct = await db.product.create({
+//       data: dbData,
+//     });
+
+//     console.log("4. DB 寫入成功! ID:", newProduct.id);
+    
+//     revalidatePath(`/dashboard/products`);
+//     return { success: "Product created!" };
+
+//   } catch (error) {
+//     console.error("--- CREATE_PRODUCT_ERROR ---");
+//     console.error(error);
+//     return { error: "資料庫寫入發生錯誤" };
+//   }
+// }
+
+
+export async function createProduct(values: z.infer<typeof productSchema>) {
+  console.log("--- 開始執行 createProduct ---")
+  // 使用共用的 schema 驗證
+  const validatedFields = productSchema.safeParse(values)
   if (!validatedFields.success) {
-    console.error("2. Zod 驗證失敗:", validatedFields.error);
-    return { error: "欄位驗證失敗" };
+    console.error("驗證失敗:", validatedFields.error)
+    return { error: "欄位驗證失敗" }
   }
-
-  // 解構資料
   const { 
     name, description, price, images, categoryId, 
-    colorId, sizeId, isFeatured, isArchived 
-  } = validatedFields.data;
-
+    colorId, sizeId, isFeatured, isArchived,
+    costPrice, materialCost, laborCost, otherCost, supplier,
+  } = validatedFields.data
   try {
-    // 3. 準備寫入 DB 的資料
     const dbData = {
       name,
       description,
       price,
       isFeatured,
       isArchived,
-      // 因為現在它們只是普通的 String? 欄位，直接賦值即可
-      categoryId: sanitizeId(categoryId), 
+      categoryId: sanitizeId(categoryId),
       sizeId: sanitizeId(sizeId),
       colorId: sanitizeId(colorId),
-      
-      // 圖片仍然有關聯 (ProductImage[])，維持原樣
+      // ⭐ 成本欄位
+      costPrice: costPrice ?? null,
+      materialCost: materialCost ?? null,
+      laborCost: laborCost ?? null,
+      otherCost: otherCost ?? null,
+      supplier: supplier ?? null,
       images: {
         createMany: {
-          data: [...images.map((image: { url: string }) => image)],
+          data: images.map((image: { url: string }) => image),
         },
       },
-      
-      // ⚠️ 關鍵修正：你的 Schema 沒有 storeId，這行必須刪掉，否則會報錯
-      // storeId: "store_id_placeholder", 
-    };
-
-    console.log("3. 準備寫入 DB 的資料:", JSON.stringify(dbData, null, 2));
-
-    // 4. 寫入資料庫
-    const newProduct = await db.product.create({
-      data: dbData,
-    });
-
-    console.log("4. DB 寫入成功! ID:", newProduct.id);
+    }
+    const newProduct = await db.product.create({ data: dbData })
     
-    revalidatePath(`/dashboard/products`);
-    return { success: "Product created!" };
-
+    revalidatePath(`/dashboard/products`)
+    return { success: "Product created!" }
   } catch (error) {
-    console.error("--- CREATE_PRODUCT_ERROR ---");
-    console.error(error);
-    return { error: "資料庫寫入發生錯誤" };
+    console.error("--- CREATE_PRODUCT_ERROR ---", error)
+    return { error: "資料庫寫入發生錯誤" }
   }
 }
-
 
 
 export async function updateProduct(id: string, formData: FormData) {
@@ -270,12 +325,24 @@ export async function updateProduct(id: string, formData: FormData) {
     name: z.string().min(1, "產品名稱為必填"),
     description: z.string().optional().nullable(),
     price: z.coerce.number().min(0, "價格不能小於 0"),
+    // ⭐ 成本欄位（可選）
+    costPrice: z.coerce.number().optional().nullable(),
+    materialCost: z.coerce.number().optional().nullable(),
+    laborCost: z.coerce.number().optional().nullable(),
+    otherCost: z.coerce.number().optional().nullable(),
+    supplier: z.string().optional().nullable(),
   })
 
   const rawData = {
     name: formData.get("name") as string,
     description: formData.get("description") as string | null,
     price: formData.get("price") as string,
+    // ⭐ 成本欄位
+    costPrice: formData.get("costPrice") ? Number(formData.get("costPrice")) : null,
+    materialCost: formData.get("materialCost") ? Number(formData.get("materialCost")) : null,
+    laborCost: formData.get("laborCost") ? Number(formData.get("laborCost")) : null,
+    otherCost: formData.get("otherCost") ? Number(formData.get("otherCost")) : null,
+    supplier: formData.get("supplier") as string | null,
   }
 
   const validated = updateSchema.parse(rawData)
@@ -286,6 +353,12 @@ export async function updateProduct(id: string, formData: FormData) {
       name: validated.name,
       description: validated.description,
       price: validated.price,
+      // ⭐ 成本欄位
+      costPrice: validated.costPrice ?? null,
+      materialCost: validated.materialCost ?? null,
+      laborCost: validated.laborCost ?? null,
+      otherCost: validated.otherCost ?? null,
+      supplier: validated.supplier ?? null,
     },
   })
 
@@ -294,6 +367,7 @@ export async function updateProduct(id: string, formData: FormData) {
 
   return { success: true }
 }
+
 
 export async function deleteProduct(id: string) {
   const session = await auth()

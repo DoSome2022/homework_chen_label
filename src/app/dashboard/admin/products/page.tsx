@@ -31,27 +31,31 @@ export default async function AdminProductsPage({
     : "createdAt"
 
   // 查詢產品
-  const products = await db.product.findMany({
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      price: true,
-      createdAt: true,
-      updatedAt: true,
-      categoryId: true,
-      // 注意：根據你的 schema，colorId 和 sizeId 可能不存在於 Product 表 (它們通常在 Variant 中)，
-      // 如果報錯請檢查 schema。假設這裡你確認它們存在：
-      colorId: true, 
-      sizeId: true,
-      isFeatured: true,
-      isArchived: true,
-      images: true,
-    },
-    orderBy: {
-      [safeSort]: order,
-    },
-  })
+const products = await db.product.findMany({
+  select: {
+    id: true,
+    name: true,
+    description: true,
+    price: true,
+    createdAt: true,
+    updatedAt: true,
+    categoryId: true,
+    colorId: true, 
+    sizeId: true,
+    isFeatured: true,
+    isArchived: true,
+    images: true,
+    // ⭐ 新增成本欄位
+    costPrice: true,
+    materialCost: true,
+    laborCost: true,
+    otherCost: true,
+    supplier: true,
+  },
+  orderBy: {
+    [safeSort]: order,
+  },
+})
 
  
 

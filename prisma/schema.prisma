@@ -105,28 +105,22 @@ model Product {
   name        String
   description String?
   price       Float
-
-  // 外鍵欄位（可選，支援關聯）
+  // ⭐ 新增：成本與供應商欄位
+  costPrice    Float?    // 總成本價（簡化版，只看一個數字）
+  materialCost Float?    // 物料成本
+  laborCost    Float?    // 人工成本
+  otherCost    Float?    // 其他成本（運費、包裝等）
+  supplier     String?   // 供應商名稱
+  // 原有的
   categoryId  String?
   colorId     String?
   sizeId      String?
-
-  // 關聯（可選，如果需要雙向查詢）
-  // category    Category? @relation(fields: [categoryId], references: [id])
-  // color       Color?    @relation(fields: [colorId], references: [id])
-  // size        Size?     @relation(fields: [sizeId], references: [id])
-
-  // 精選與封存（這兩個是您目前最需要的布林欄位）
   isFeatured  Boolean   @default(false)
   isArchived  Boolean   @default(false)
-
-  // 圖片（支援多張，一對多 relation）
   images      ProductImage[]
-
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
-
 
 // model Category {
 //   id        String    @id @default(cuid())
@@ -272,6 +266,8 @@ model Broadcast {
 
   status          BroadcastStatus  @default(DRAFT)
   publishedAt     DateTime?        // 實際發布時間
+   // ⭐ 新增：是否顯示在客戶頁面
+  isPinned  Boolean @default(false)
 }
 
 enum BroadcastStatus {

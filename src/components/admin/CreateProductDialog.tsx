@@ -32,12 +32,18 @@ export interface ProductFormValues {
   name: string;
   price: number;
   description?: string;
-  images: { url: string }[]; // 圖片為物件陣列，每個物件包含 url
-  categoryId: string;
-  colorId: string;
-  sizeId: string;
+  images: { url: string }[];
+  categoryId: string | null;   // ← 改為 string | null
+  colorId: string | null;      // ← 改為 string | null
+  sizeId: string | null;       // ← 改為 string | null
   isFeatured: boolean;
   isArchived: boolean;
+  // ⭐ 新增成本欄位
+  costPrice?: number;
+  materialCost?: number;
+  laborCost?: number;
+  otherCost?: number;
+  supplier?: string;
 }
 
 interface ProductFormProps {
@@ -144,6 +150,134 @@ export function CreateProductDialog({
           />
         </div>
 
+         {/* ⭐ 成本設定區塊 */}
+        <div className="border rounded-md p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground">💰 成本設定（可選，供報告分析用）</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="costPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>總成本價</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      disabled={isSubmitting}
+                      placeholder="0.00"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? undefined : Number(e.target.value)
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>簡化版，只需填入一個總金額</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="supplier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>供應商</FormLabel>
+                  <FormControl>
+                    <Input
+                      disabled={isSubmitting}
+                      placeholder="供應商名稱"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="text-xs text-muted-foreground border-t pt-2">
+            或填寫以下細項成本（總成本 = 物料 + 人工 + 其他）
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="materialCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>物料成本</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      disabled={isSubmitting}
+                      placeholder="0.00"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? undefined : Number(e.target.value)
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="laborCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>人工成本</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      disabled={isSubmitting}
+                      placeholder="0.00"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? undefined : Number(e.target.value)
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="otherCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>其他成本</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      disabled={isSubmitting}
+                      placeholder="0.00"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? undefined : Number(e.target.value)
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
         {/* 分類、尺寸、顏色 - 三欄並排 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <FormField
@@ -155,7 +289,7 @@ export function CreateProductDialog({
                 <Select
                   disabled={isSubmitting}
                   onValueChange={field.onChange}
-                  value={field.value}
+                  value={field.value ?? undefined} 
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -187,7 +321,7 @@ export function CreateProductDialog({
                 <Select
                   disabled={isSubmitting}
                   onValueChange={field.onChange}
-                  value={field.value}
+                 value={field.value ?? undefined} 
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -216,7 +350,7 @@ export function CreateProductDialog({
                 <Select
                   disabled={isSubmitting}
                   onValueChange={field.onChange}
-                  value={field.value}
+                  value={field.value ?? undefined} 
                 >
                   <FormControl>
                     <SelectTrigger>

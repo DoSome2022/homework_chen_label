@@ -13,8 +13,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CreateProductDialog, ProductFormValues } from "./CreateProductDialog";
+import { CreateProductDialog } from "./CreateProductDialog";
 import { createProduct } from "@/lib/actions/admin-product";
+import { ProductFormSchemaType, productSchema } from "@/lib/schemas/product";
+// import { productSchema } from "@/lib/actions/schemas/product"  // ← 引入共用 schema
+// import type { ProductFormSchemaType } from "@/lib/actions/schemas/product"  // ← 引入型別
+
 
 // 臨時靜態資料（之後您可以改成從資料庫讀取）
 const mockCategories = [
@@ -34,18 +38,10 @@ const mockSizes = [
   { id: "sz3", name: "L", value: "L" },
 ];
 
-// Zod 驗證規則（與 ProductFormValues 完全一致）
-const formSchema = z.object({
-  name: z.string().min(1, "請輸入產品名稱"),
-  price: z.number().min(0, "價格不可小於 0"),
-  description: z.string().optional(),
-  images: z.array(z.object({ url: z.string().url() })).min(1, "請至少上傳一張圖片"),
-  categoryId: z.string().min(1, "請選擇分類"),
-  colorId: z.string().min(1, "請選擇顏色"),
-  sizeId: z.string().min(1, "請選擇尺寸"),
-  isFeatured: z.boolean(),
-  isArchived: z.boolean(),
-});
+// ProductFormValues 直接等於 schema 推斷的型別
+type ProductFormValues = ProductFormSchemaType
+// 移除原本的 formSchema，直接用 productSchema
+const formSchema = productSchema
 
 export function ProductManagement() {
   const [open, setOpen] = useState(false);
@@ -57,9 +53,9 @@ export function ProductManagement() {
       price: 0,
       description: "",
       images: [],
-      categoryId: "",
-      colorId: "",
-      sizeId: "",
+    categoryId: null,     // ← 改為 null
+    colorId: null,        // ← 改為 null
+    sizeId: null, 
       isFeatured: false,
       isArchived: false,
     },
@@ -67,41 +63,33 @@ export function ProductManagement() {
 
 // ProductManagement.tsx 的 onSubmit
 // 假設你用的是 react-hook-form 的 handleSubmit
-const onSubmit = async (data: ProductFormValues) => {
-  try {
-    // 整理資料
-    const formattedData = {
-      ...data,
-      price: Number(data.price),
-  categoryId: (data.categoryId === "cat1" || !data.categoryId) ? null : data.categoryId,
-  colorId: (data.colorId === "col1" || !data.colorId) ? null : data.colorId,
-  sizeId: (data.sizeId === "sz1" || !data.sizeId) ? null : data.sizeId,
-    };
-
-    // --- 修改開始 ---
-    console.log("前端送出的資料:", formattedData);
-
-    // 呼叫 Server Action 並等待結果
-    const result = await createProduct(formattedData);
-
-    // 檢查是否有錯誤
-    if (result.error) {
-      console.error("後端回傳錯誤:", result.error);
-      alert(`建立失敗: ${result.error}`); // 或者用 toast.error
-      return; // 發生錯誤就停在這裡，不要關閉視窗
+  const onSubmit = async (data: ProductFormValues) => {
+    try {
+      // 整理資料（Nullable 欄位處理）
+      const formattedData = {
+        ...data,
+        price: Number(data.price),
+        categoryId: (data.categoryId === "cat1" || !data.categoryId) ? null : data.categoryId,
+        colorId: (data.colorId === "col1" || !data.colorId) ? null : data.colorId,
+        sizeId: (data.sizeId === "sz1" || !data.sizeId) ? null : data.sizeId,
+      }
+      // ✅ 用共用 schema 驗證，確保型別完全一致
+      const validatedData = productSchema.parse(formattedData)
+      console.log("前端送出的資料:", validatedData)
+      const result = await createProduct(validatedData)
+      if (result.error) {
+        console.error("後端回傳錯誤:", result.error)
+        alert(`建立失敗: ${result.error}`)
+        return
+      }
+      console.log("建立成功:", result.success)
+      setOpen(false)
+      form.reset()
+    } catch (error) {
+      console.error("前端未知錯誤:", error)
+      alert("發生意外錯誤")
     }
-
-    // 成功才執行這些
-    console.log("建立成功:", result.success);
-    setOpen(false);
-    form.reset();
-    // --- 修改結束 ---
-
-  } catch (error) {
-    console.error("前端未知錯誤:", error);
-    alert("發生意外錯誤");
   }
-};
 
 
 

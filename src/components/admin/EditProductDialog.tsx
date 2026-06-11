@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { updateProduct } from "@/lib/actions/admin-product";
-import { ProductImage } from "@prisma/client";   // ← 加入這行
+import { ProductImage } from "@prisma/client";
 
-// 定義可編輯的產品型別（與 ProductTable 傳遞的 Pick 一致）
+// 定義可編輯的產品型別（加入成本欄位）
 type EditableProduct = {
   id: string;
   name: string;
@@ -30,17 +30,18 @@ type EditableProduct = {
   price: number;
   createdAt: Date;
   updatedAt: Date;
-  categoryId: string | null;     // 注意：這裡使用 categoryId 而非 category string
+  categoryId: string | null;
   colorId: string | null;
   sizeId: string | null;
   isFeatured: boolean;
   isArchived: boolean;
   images: ProductImage[];
-  
-  // 若 updateProduct 需要 stock / imageUrl / status，可在查詢時補齊，或在 action 處理
-  // stock?: number;
-  // imageUrl?: string | null;
-  // status?: "ACTIVE" | "INACTIVE" | "ARCHIVED";
+  // ⭐ 新增成本欄位
+  costPrice: number | null;
+  materialCost: number | null;
+  laborCost: number | null;
+  otherCost: number | null;
+  supplier: string | null;
 };
 
 interface EditProductDialogProps {
@@ -82,7 +83,7 @@ export function EditProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>編輯產品</DialogTitle>
         </DialogHeader>
@@ -99,7 +100,7 @@ export function EditProductDialog({
             />
           </div>
 
-          {/* 分類：使用 categoryId，但表單送 category（需在 action 處理） */}
+          {/* 分類 */}
           <div className="space-y-2">
             <Label htmlFor="category">分類</Label>
             <Select name="category" defaultValue={product.categoryId ?? ""}>
@@ -116,7 +117,7 @@ export function EditProductDialog({
             </Select>
           </div>
 
-          {/* 價格與庫存（若無 stock，可移除或預設 0） */}
+          {/* 價格 */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">價格</Label>
@@ -125,27 +126,90 @@ export function EditProductDialog({
                 name="price"
                 type="number"
                 min="0"
-                step="0.01"  // 若 price 是 Decimal，建議加上 step
+                step="0.01"
                 defaultValue={product.price}
                 required
               />
             </div>
-
-            {/* 若 Prisma 有 stock 欄位，請在查詢時 include；這裡先註解 */}
-            {/* <div className="space-y-2">
-              <Label htmlFor="stock">庫存</Label>
-              <Input
-                id="stock"
-                name="stock"
-                type="number"
-                min="0"
-                defaultValue={product.stock ?? 0}
-                required
-              />
-            </div> */}
           </div>
 
-          {/* 狀態（若 Prisma schema 使用 isArchived 代替 status，可調整） */}
+          {/* ⭐ 成本設定區塊 */}
+          <div className="border rounded-md p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                💰 成本設定（供報告分析用）
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="costPrice">總成本價</Label>
+                <Input
+                  id="costPrice"
+                  name="costPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={product.costPrice ?? ""}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supplier">供應商</Label>
+                <Input
+                  id="supplier"
+                  name="supplier"
+                  defaultValue={product.supplier ?? ""}
+                  placeholder="供應商名稱"
+                />
+              </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground border-t pt-2">
+              或填寫以下細項成本（總成本 = 物料 + 人工 + 其他）
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="materialCost">物料成本</Label>
+                <Input
+                  id="materialCost"
+                  name="materialCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={product.materialCost ?? ""}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="laborCost">人工成本</Label>
+                <Input
+                  id="laborCost"
+                  name="laborCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={product.laborCost ?? ""}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="otherCost">其他成本</Label>
+                <Input
+                  id="otherCost"
+                  name="otherCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={product.otherCost ?? ""}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 狀態 */}
           <div className="space-y-2">
             <Label htmlFor="status">狀態</Label>
             <Select 
@@ -182,19 +246,6 @@ export function EditProductDialog({
               type="file"
               accept="image/*"
             />
-            {/* 若未來有 imageUrl，可顯示預覽 */}
-            {/* {product.imageUrl && (
-              <div className="mt-2">
-                <p className="text-xs text-muted-foreground">
-                  目前圖片：
-                </p>
-                <img 
-                  src={product.imageUrl} 
-                  alt="Current product" 
-                  className="mt-1 h-20 w-20 object-cover rounded"
-                />
-              </div>
-            )} */}
             <p className="text-xs text-muted-foreground mt-1">
               若不上傳新圖片，將保留原有圖片
             </p>

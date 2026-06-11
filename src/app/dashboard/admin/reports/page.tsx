@@ -106,6 +106,16 @@ export interface ProductReportData {
   name: string
   description: string | null
   price: number
+  // ⭐ 成本相關
+  costPrice: number | null
+  materialCost: number | null
+  laborCost: number | null
+  otherCost: number | null
+  totalCost: number      // 計算出來的總成本
+  profit: number         // 計算出來的毛利
+  profitRate: string     // 計算出來的毛利率（如 "62.5%"）
+  supplier: string | null
+  // 原有的
   isFeatured: boolean
   isArchived: boolean
   imageUrl: string | null
@@ -209,6 +219,12 @@ const products = await db.product.findMany({
     name: true,
     description: true,
     price: true,
+    // ⭐ 加入新欄位
+    costPrice: true,
+    materialCost: true,
+    laborCost: true,
+    otherCost: true,
+    supplier: true,
     isFeatured: true,
     isArchived: true,
     images: {
@@ -221,16 +237,40 @@ const products = await db.product.findMany({
 
 
 
-const productData: ProductReportData[] = products.map((p) => ({
-  id: p.id,
-  sku: p.id.slice(0, 12).toUpperCase(),
-  name: p.name,
-  description: p.description,
-  price: p.price,
-  isFeatured: p.isFeatured,
-  isArchived: p.isArchived,
-  imageUrl: p.images[0]?.url ?? null,
-}))
+
+const productData: ProductReportData[] = products.map((p) => {
+  // ⭐ 計算成本與毛利
+  const materialCost = p.materialCost ?? 0
+  const laborCost = p.laborCost ?? 0
+  const otherCost = p.otherCost ?? 0
+  const totalCost = materialCost + laborCost + otherCost
+  const profit = p.price - totalCost
+  const profitRate = p.price > 0 
+    ? ((profit / p.price) * 100).toFixed(1) + '%' 
+    : '-'
+
+  return {
+    id: p.id,
+    sku: p.id.slice(0, 12).toUpperCase(),
+    name: p.name,
+    description: p.description,
+    price: p.price,
+    // ⭐ 成本資料
+    costPrice: p.costPrice,
+    materialCost: p.materialCost,
+    laborCost: p.laborCost,
+    otherCost: p.otherCost,
+    totalCost,
+    profit,
+    profitRate,
+    supplier: p.supplier,
+    // 原有的
+    isFeatured: p.isFeatured,
+    isArchived: p.isArchived,
+    imageUrl: p.images[0]?.url ?? null,
+  }
+})
+
 
   // ── 4. AMOUNT 金額報告資料 ──
   // 將 Quote 視為「訂單」，關聯到 Project → Customer → CustomerContact

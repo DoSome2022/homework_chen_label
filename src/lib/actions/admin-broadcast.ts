@@ -235,3 +235,23 @@ export async function archiveBroadcast(id: string) {
   revalidatePath("/dashboard/admin/broadcasts")
   return { success: true }
 }
+
+export async function togglePinBroadcast(id: string) {
+  const session = await auth()
+  if (!session || session.user?.role !== "ADMIN") {
+    throw new Error("未授權")
+  }
+
+  const broadcast = await db.broadcast.findUnique({ where: { id } })
+  if (!broadcast) throw new Error("廣播不存在")
+
+  await db.broadcast.update({
+    where: { id },
+    data: { isPinned: !broadcast.isPinned },
+  })
+
+  revalidatePath("/dashboard/admin/broadcasts")
+  revalidatePath("/dashboard") // 客戶端也要重整
+
+  return { success: true }
+}

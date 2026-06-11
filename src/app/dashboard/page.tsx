@@ -137,18 +137,34 @@ export default async function DashboardPage() {
       }),
     ]);
 
-    const allPublishedBroadcasts = customer?.isSubscribed
-      ? await db.broadcast.findMany({
-          where: {
+const allPublishedBroadcasts = customer?.isSubscribed
+  ? await db.broadcast.findMany({
+      where: {
+        AND: [
+          // 時間條件
+          {
             OR: [
               { scheduledAt: null },
               { scheduledAt: { lte: now } },
             ],
           },
-          orderBy: { createdAt: "desc" },
-          include: { author: { select: { name: true } } },
-        })
-      : [];
+          // ⭐ 顯示條件：已發布 或 管理員手動置頂
+          {
+            OR: [
+              { status: "PUBLISHED" },
+              { isPinned: true },
+            ],
+          },
+        ],
+      },
+      orderBy: [
+        { isPinned: "desc" },   // ⭐ isPinned = true 的排最前面
+        { createdAt: "desc" },
+      ],
+      include: { author: { select: { name: true } } },
+    })
+  : [];
+
 
     const initialData = {
       myApplicationsCount,

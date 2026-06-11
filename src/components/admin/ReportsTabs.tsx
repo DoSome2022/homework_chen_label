@@ -76,15 +76,13 @@ function SalesReportView({
 }) {
   const [selectedYear, setSelectedYear] = useState('2025')
   const [selectedMonth, setSelectedMonth] = useState('12')
-  const [searchKeyword, setSearchKeyword] = useState('')
+  // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'name' | 'quoteCount' | 'totalAmount' | 'avgQuote'
   const { sortKey, sortDirection, handleSort, SortArrow } = useSort<SortKey>()
 
   const sortedData = useMemo(() => {
-    const list = data.filter(item =>
-      item.name.toLowerCase().includes(searchKeyword.toLowerCase())
-    )
+    const list = [...data]
     if (sortKey && sortDirection) {
       list.sort((a, b) => {
         const va = a[sortKey], vb = b[sortKey]
@@ -97,14 +95,14 @@ function SalesReportView({
       })
     }
     return list
-  }, [data, searchKeyword, sortKey, sortDirection])
+  }, [data,  sortKey, sortDirection])
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
-        <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
-        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button>
+        {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
+        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
 
       <div className="flex flex-wrap items-center gap-8 mb-6">
@@ -150,33 +148,27 @@ function SalesReportView({
 //  📦 PRODUCT REPORT VIEW
 // ─────────────────────────────────────
 function ProductReportView({ data }: { data: ProductReportData[] }) {
-  const [searchKeyword, setSearchKeyword] = useState('')
-  type SortKey = 'sku' | 'name' | 'price'
+  type SortKey = 'sku' | 'name' | 'price' | 'totalCost' | 'profit' | 'profitRate'
   const { sortKey, sortDirection, handleSort, SortArrow } = useSort<SortKey>()
   const sortedData = useMemo(() => {
-    const list = data.filter(item =>
-      item.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchKeyword.toLowerCase())
-    )
+    const list = [...data]
     if (sortKey && sortDirection) {
       list.sort((a, b) => {
         const va = a[sortKey], vb = b[sortKey]
         if (typeof va === 'number' && typeof vb === 'number') {
           return sortDirection === 'asc' ? va - vb : vb - va
         }
+        const sa = String(va).toLowerCase(), sb = String(vb).toLowerCase()
         return sortDirection === 'asc'
-          ? String(va).localeCompare(String(vb))
-          : String(vb).localeCompare(String(va))
+          ? sa.localeCompare(sb)
+          : sb.localeCompare(sa)
       })
     }
     return list
-  }, [data, searchKeyword, sortKey, sortDirection])
+  }, [data, sortKey, sortDirection])
+
   return (
     <>
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
-        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button>
-      </div>
       <div className="overflow-x-auto rounded border border-gray-200">
         <table className="w-full min-w-max text-sm text-gray-700">
           <thead>
@@ -184,8 +176,11 @@ function ProductReportView({ data }: { data: ProductReportData[] }) {
               <th className="px-4 py-3 text-left font-medium text-gray-600">圖片</th>
               <ThSort label="產品編號" sortKey="sku" onClick={handleSort} Arrow={<SortArrow columnKey="sku" />} />
               <ThSort label="產品名稱" sortKey="name" onClick={handleSort} Arrow={<SortArrow columnKey="name" />} />
-              <ThSort label="價格" sortKey="price" onClick={handleSort} Arrow={<SortArrow columnKey="price" />} />
-              <th className="px-4 py-3 text-left font-medium text-gray-600">描述</th>
+              <ThSort label="售價" sortKey="price" onClick={handleSort} Arrow={<SortArrow columnKey="price" />} />
+              <ThSort label="總成本" sortKey="totalCost" onClick={handleSort} Arrow={<SortArrow columnKey="totalCost" />} />
+              <ThSort label="毛利" sortKey="profit" onClick={handleSort} Arrow={<SortArrow columnKey="profit" />} />
+              <ThSort label="毛利率" sortKey="profitRate" onClick={handleSort} Arrow={<SortArrow columnKey="profitRate" />} />
+              <th className="px-4 py-3 text-left font-medium text-gray-600">供應商</th>
               <th className="px-4 py-3 text-left font-medium text-gray-600">狀態</th>
             </tr>
           </thead>
@@ -202,7 +197,14 @@ function ProductReportView({ data }: { data: ProductReportData[] }) {
                 <td className="px-4 py-3 whitespace-nowrap font-mono text-xs">{item.sku}</td>
                 <td className="px-4 py-3 whitespace-nowrap font-medium">{item.name}</td>
                 <td className="px-4 py-3 whitespace-nowrap">${item.price.toLocaleString()}</td>
-                <td className="px-4 py-3 max-w-xs truncate text-gray-500">{item.description ?? '-'}</td>
+                <td className="px-4 py-3 whitespace-nowrap">${item.totalCost.toLocaleString()}</td>
+                <td className={`px-4 py-3 whitespace-nowrap font-medium ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${item.profit.toLocaleString()}
+                </td>
+                <td className={`px-4 py-3 whitespace-nowrap font-medium ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {item.profitRate}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">{item.supplier ?? '-'}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {item.isArchived ? (
                     <span className="text-red-500 text-xs bg-red-50 px-2 py-0.5 rounded">已封存</span>
@@ -216,7 +218,7 @@ function ProductReportView({ data }: { data: ProductReportData[] }) {
             ))}
             {sortedData.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-500">暫無產品資料</td>
+                <td colSpan={9} className="text-center py-8 text-gray-500">暫無產品資料</td>
               </tr>
             )}
           </tbody>
@@ -225,7 +227,6 @@ function ProductReportView({ data }: { data: ProductReportData[] }) {
     </>
   )
 }
-
 // ─────────────────────────────────────
 //  💰 AMOUNT REPORT VIEW
 // ─────────────────────────────────────
@@ -238,17 +239,13 @@ function AmountReportView({
 }) {
   const [selectedYear, setSelectedYear] = useState('2025')
   const [selectedMonth, setSelectedMonth] = useState('12')
-  const [searchKeyword, setSearchKeyword] = useState('')
+  // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'orderNo' | 'customerName' | 'phone' | 'date' | 'customerType' | 'company' | 'amount'
   const { sortKey, sortDirection, handleSort, SortArrow } = useSort<SortKey>()
 
   const sortedData = useMemo(() => {
-    const list = data.filter(item =>
-      item.orderNo.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      item.customerName.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      item.company.toLowerCase().includes(searchKeyword.toLowerCase())
-    )
+      const list = [...data]
     if (sortKey && sortDirection) {
       list.sort((a, b) => {
         const va = a[sortKey], vb = b[sortKey]
@@ -261,7 +258,7 @@ function AmountReportView({
       })
     }
     return list
-  }, [data, searchKeyword, sortKey, sortDirection])
+  }, [data,  sortKey, sortDirection])
 
   const typeLabel: Record<string, string> = {
     NORMAL: '會員',
@@ -272,8 +269,8 @@ function AmountReportView({
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
-        <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
-        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button>
+        {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
+        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
 
       <div className="flex flex-wrap items-center gap-8 mb-6">
@@ -330,15 +327,13 @@ function AmountReportView({
 function BroadcastReportView({ data }: { data: BroadcastCampaignData[] }) {
   const [selectedYear, setSelectedYear] = useState('2025')
   const [selectedMonth, setSelectedMonth] = useState('12')
-  const [searchKeyword, setSearchKeyword] = useState('')
+  // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'name' | 'applications'
   const { sortKey, sortDirection, handleSort, SortArrow } = useSort<SortKey>()
 
   const sortedData = useMemo(() => {
-    const list = data.filter(item =>
-      item.name.toLowerCase().includes(searchKeyword.toLowerCase())
-    )
+const list = [...data]
     if (sortKey && sortDirection) {
       list.sort((a, b) => {
         const va = a[sortKey], vb = b[sortKey]
@@ -351,14 +346,14 @@ function BroadcastReportView({ data }: { data: BroadcastCampaignData[] }) {
       })
     }
     return list
-  }, [data, searchKeyword, sortKey, sortDirection])
+  }, [data,  sortKey, sortDirection])
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
-        <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
-        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button>
+        {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
+        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
 
       <div className="overflow-x-auto rounded border border-gray-200">
@@ -394,16 +389,13 @@ function BroadcastReportView({ data }: { data: BroadcastCampaignData[] }) {
 function EmployeeReportView({ data }: { data: EmployeeStaffData[] }) {
   const [selectedYear, setSelectedYear] = useState('2025')
   const [selectedMonth, setSelectedMonth] = useState('12')
-  const [searchKeyword, setSearchKeyword] = useState('')
+  // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'staffId' | 'name' | 'followUps' | 'quoted' | 'completed'
   const { sortKey, sortDirection, handleSort, SortArrow } = useSort<SortKey>()
 
   const sortedData = useMemo(() => {
-    const list = data.filter(emp =>
-      emp.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-      emp.staffId.toLowerCase().includes(searchKeyword.toLowerCase())
-    )
+const list = [...data]
     if (sortKey && sortDirection) {
       list.sort((a, b) => {
         const va = a[sortKey], vb = b[sortKey]
@@ -416,14 +408,14 @@ function EmployeeReportView({ data }: { data: EmployeeStaffData[] }) {
       })
     }
     return list
-  }, [data, searchKeyword, sortKey, sortDirection])
+  }, [data, sortKey, sortDirection])
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
-        <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
-        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button>
+        {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
+        <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
 
       <div className="overflow-x-auto rounded border border-gray-200">
@@ -483,18 +475,18 @@ function YearMonthSelect({ year, month, onYearChange, onMonthChange }: {
   )
 }
 
-function SearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="relative flex-1 max-w-md">
-      <input type="text" value={value} onChange={e => onChange(e.target.value)}
-        placeholder="搜尋"
-        className="w-full border border-gray-300 rounded pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
-      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    </div>
-  )
-}
+// function SearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+//   return (
+//     <div className="relative flex-1 max-w-md">
+//       <input type="text" value={value} onChange={e => onChange(e.target.value)}
+//         placeholder="搜尋"
+//         className="w-full border border-gray-300 rounded pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+//       <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+//       </svg>
+//     </div>
+//   )
+// }
 
 function StatCard({ icon, label, value }: { icon: 'cart' | 'document' | 'user'; label: string; value: string }) {
   const icons = {
