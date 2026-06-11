@@ -20,6 +20,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { broadcastSchema } from "@/lib/schemas/broadcast"
 import { createBroadcast, updateBroadcast } from "@/lib/actions/admin-broadcast"
+
 import Image from "next/image"
 import {
   Popover,
@@ -30,6 +31,14 @@ import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { useRef } from "react"
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 
 type BroadcastFormValues = {
   title: string
@@ -37,6 +46,7 @@ type BroadcastFormValues = {
   videoUrl?: string
   imageUrl?: string 
   scheduledAt?: string | null 
+   status?: "DRAFT" | "PUBLISHED"   // ✅ 新增
 }
 
 type BroadcastFormProps = {
@@ -47,6 +57,7 @@ type BroadcastFormProps = {
     imageUrl?: string | null
     videoUrl?: string | null
     scheduledAt?: Date | null
+    status?: "DRAFT" | "PUBLISHED"   
   }
   onSuccess: () => void
 }
@@ -54,7 +65,7 @@ type BroadcastFormProps = {
 export function BroadcastForm({ broadcast, onSuccess }: BroadcastFormProps) {
   const [preview, setPreview] = useState<string | null>(broadcast?.imageUrl || null)
   const [videoPreview, setVideoPreview] = useState<string | null>(broadcast?.videoUrl || null)
-  const [dateOpen, setDateOpen] = useState(false)
+
 const fileInputRef = useRef<HTMLInputElement>(null)
 
 
@@ -66,6 +77,7 @@ const fileInputRef = useRef<HTMLInputElement>(null)
       videoUrl: broadcast?.videoUrl || "",
       imageUrl: broadcast?.imageUrl || "",   // 新增這行
       scheduledAt: broadcast?.scheduledAt ? broadcast.scheduledAt.toISOString().slice(0, 16) : "",
+      status: broadcast?.status || "DRAFT",
     },
   })
 
@@ -213,44 +225,140 @@ const onSubmit = async (data: BroadcastFormValues, e?: React.BaseSyntheticEvent)
 
 
           {/* 新增：排程發布時間 */}
+<FormField
+  control={form.control}
+  name="scheduledAt"
+  render={({ field }) => {
+    // 解析目前的值
+    const currentValue = field.value ? new Date(field.value) : null
+    
+    // 日期部分
+    const datePart = currentValue
+      ? format(currentValue, "yyyy-MM-dd")
+      : format(new Date(), "yyyy-MM-dd")
+    
+    // 時間部分
+    const timePart = currentValue
+      ? format(currentValue, "HH:mm")
+      : "08:00"
+
+    // 組合日期+時間
+    const updateDateTime = (date: string, time: string) => {
+      const combined = `${date}T${time}:00`
+      field.onChange(combined)
+    }
+
+    return (
+      <FormItem>
+        <FormLabel>排程發布時間（選填，留空立即發布）</FormLabel>
+        <div className="flex gap-2">
+          {/* 日期選擇 */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !field.value && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {currentValue
+                  ? format(currentValue, "yyyy-MM-dd")
+                  : "選擇日期"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={currentValue || undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const dateStr = format(date, "yyyy-MM-dd")
+                    updateDateTime(dateStr, timePart)
+                  }
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* 時間選擇（小時:分鐘） */}
+          <select
+            value={timePart}
+            onChange={(e) => {
+              updateDateTime(datePart, e.target.value)
+            }}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {Array.from({ length: 24 }, (_, h) =>
+              Array.from({ length: 4 }, (_, m) => {
+                const hour = String(h).padStart(2, "0")
+                const min = String(m * 15).padStart(2, "0") // 每 15 分鐘一間隔
+                return `${hour}:${min}`
+              })
+            ).flat().map((time) => (
+              <option key={time} value={time}>
+                {time}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 清除按鈕 */}
+        {field.value && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-1"
+            onClick={() => field.onChange("")}
+          >
+            清除排程時間
+          </Button>
+        )}
+
+        <FormMessage />
+      </FormItem>
+    )
+  }}
+/>
+
+
           <FormField
-            control={form.control}
-            name="scheduledAt"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>排程發布時間（選填，留空立即發布）</FormLabel>
-                <FormControl>
-                  <Popover open={dateOpen} onOpenChange={setDateOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(new Date(field.value), "yyyy-MM-dd HH:mm") : "選擇時間"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value ? new Date(field.value) : undefined}
-                        onSelect={(date) => {
-                          if (date) {
-                            field.onChange(date.toISOString())
-                          }
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+  control={form.control}
+  name="status"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>發布狀態</FormLabel>
+      <Select
+        value={field.value || "DRAFT"}
+        onValueChange={field.onChange}
+      >
+        <FormControl>
+          <SelectTrigger>
+            <SelectValue placeholder="選擇狀態" />
+          </SelectTrigger>
+        </FormControl>
+        <SelectContent>
+          <SelectItem value="DRAFT">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-yellow-400" />
+              草稿（僅儲存，不推送）
+            </span>
+          </SelectItem>
+          <SelectItem value="PUBLISHED">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400" />
+              立即發布
+            </span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
 
 <FormItem>
   <FormLabel>圖片（選填）</FormLabel>

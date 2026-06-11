@@ -161,7 +161,7 @@ async authorize(credentials) {
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({  account, profile }) {
       if (account?.provider === "google" && profile?.email) {
         const existing = await db.user.findUnique({
           where: { email: profile.email },

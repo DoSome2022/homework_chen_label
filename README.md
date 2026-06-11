@@ -13,3 +13,13 @@ admin 加了建立聯絡資訊
 
 改了session undefined問題
 改了client 的message 問題
+
+6/6/2026
+
+在廣播中 加了 申請鍵
+之後 再等報告ui 即可
+
+
+11/6/2026
+
+加了很多東西 可delploy

@@ -1,9 +1,12 @@
+// src/app/dashboard/staff/[clientId]/page.tsx
+
 "use client";
 
 import { useState, useEffect, useCallback, use } from "react";
 import { getClientDetail } from "@/lib/actions/staff";
-import { MessageInput } from "@/components/client/MessageInput";
+
 import Image from "next/image";
+import { StaffMessageInput } from "@/components/staff/MessageInput";
 
 // 資料結構介面定義（保持不變，但請注意 client 才是核心）
 interface Message {
@@ -15,11 +18,17 @@ interface Message {
   senderType?: "USER" | "SYSTEM" | null;
 }
 
+// 找到 interface Conversation，改成：
 interface Conversation {
   id: string;
   customerId: string;
   messages: Message[];
+  project?: {           // ⭐ 加上 project
+    id: string;
+    title?: string;
+  } | null;
 }
+
 
 interface CustomerContact {
   phone?: string | null;
@@ -187,7 +196,10 @@ export default function StaffClientDetailPage({ params }: PageProps) {
                   ))}
                 </div>
 
-                <MessageInput conversationId={conv.id} />
+                <StaffMessageInput 
+                  conversationId={conv.id} 
+                  projectId={conv.project?.id || ""} 
+                />
               </div>
             ))}
           </div>

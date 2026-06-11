@@ -23,7 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ImageUploader } from "../shared/ImageUploader";
+import { FileUploader } from "../shared/ImageUploader";
+
 // import { createProduct } from "@/lib/actions/admin-product";
 
 // 產品表單資料型別（與 Zod schema 一致）
@@ -69,20 +70,24 @@ export function CreateProductDialog({
             <FormItem>
               <FormLabel>產品圖片（可多張）</FormLabel>
               <FormControl>
-                <ImageUploader
-                  value={field.value.map((image) => image.url)} // 轉為 string[] 給 ImageUploader
+                {/* ✅ 修正 2：改用 FileUploader，value 轉為 FileUploader 接受的格式 */}
+                <FileUploader
+                  value={field.value.map((image) => ({
+                    url: image.url,
+                    name: image.url.split("/").pop() || "image",
+                    type: "image/*",
+                  }))}
                   disabled={isSubmitting}
-                  onChange={(newUrls: string[]) => {
-                    // 將 string[] 轉回 { url: string }[] 格式，維持表單型別一致
-                    const newImages = newUrls.map((url) => ({ url }));
-                    field.onChange(newImages);
+                  onChange={(files) => {
+                    // ✅ FileUploader 回傳的是 { url; name; type }[]，轉回 { url }[]
+                    field.onChange(files.map((f) => ({ url: f.url })));
                   }}
                   onRemove={(urlToRemove: string) => {
-                    // 移除指定 url 的圖片物件
                     field.onChange(
                       field.value.filter((image) => image.url !== urlToRemove)
                     );
                   }}
+                  accept="image/*"  // ✅ 限制只接受圖片
                 />
               </FormControl>
               <FormDescription>

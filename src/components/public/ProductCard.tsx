@@ -3,6 +3,7 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"  
 
 // 定義 Image 介面
 interface ProductImage {
@@ -31,10 +32,13 @@ export function ProductCard({ product }: { product: Product }) {
       {/* ✅ 新增：圖片區域 */}
       {firstImage ? (
         <div className="aspect-[4/3] overflow-hidden bg-gray-100">
-          <img
+          <Image
             src={firstImage}
             alt={product.name}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            fill
+            className="object-cover hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            unoptimized                                 // 外部圖片（AliOSS）
           />
         </div>
       ) : (

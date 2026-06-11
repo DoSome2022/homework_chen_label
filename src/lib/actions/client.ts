@@ -56,21 +56,47 @@ export async function applyForProduct(formData: FormData) {
 
   const userId = session.user.id
 
+  // 查詢產品資訊
+  const product = await db.product.findUnique({
+    where: { id: parsed.productId },
+    select: { name: true, description: true, price: true },
+  })
+
+  if (!product) throw new Error("產品不存在")
+
+  // ── 產品資訊字串（title 和 description 都會用到）──
+  const productInfo = [
+    "",
+    "─── 申請產品資訊 ───",
+    `📦 產品名稱：${product.name}`,
+    `📝 產品說明：${product.description || "無"}`,
+    `💰 產品價格：$${product.price}`,
+  ].join("\n")
+
+  // ── 組合 title ──
+  const finalTitle = `${parsed.title}\n${productInfo}`
+
+  // ── 組合 description ──
+  const userDescription = parsed.description?.trim() || ""
+  const finalDescription = userDescription
+    ? `${userDescription}\n${productInfo}`
+    : productInfo.trimStart()
+
   // 建立待指派項目
   const project = await db.project.create({
     data: {
-      title: parsed.title,
-      description: parsed.description || null,
+      title: finalTitle,               // ✅ title 也包含產品資訊
+      description: finalDescription,   // ✅ description 也包含產品資訊
       customerId: userId,
       status: "PENDING",
     },
   })
 
-    // ⬇️ 自動建立該任務的對話框
+  // 自動建立該任務的對話框
   await db.conversation.create({
     data: {
       customerId: userId,
-      projectId: project.id,  // 綁定任務
+      projectId: project.id,
     },
   })
 
@@ -84,8 +110,11 @@ export async function applyForProduct(formData: FormData) {
   }
 
   revalidatePath("/dashboard/client/products")
-  revalidatePath("/dashboard/staff/my-clients") // 通知員工有新申請
+  revalidatePath("/dashboard/staff/my-clients")
+
+  return { success: true }
 }
+
 
 // 2. 潛力客發送訊息（文字 + 圖片）
 // src/lib/actions/client.ts
@@ -175,4 +204,81 @@ export async function toggleBroadcastSubscription() {
   })
 
   revalidatePath("/dashboard/client/broadcasts")
+}
+
+
+// 增加在 src/lib/actions/client.ts 中
+
+export async function applyForBroadcast(broadcastId: string) {
+  const session = await auth()
+  if (!session?.user?.role || session.user.role !== "CUSTOMER") {
+    throw new Error("Unauthorized: 僅限客戶申請")
+  }
+
+  const userId = session.user.id
+
+  // 1. 查詢廣播資訊
+  const broadcast = await db.broadcast.findUnique({
+    where: { id: broadcastId },
+    select: {
+      title: true,
+      content: true,
+    },
+  })
+
+  if (!broadcast) throw new Error("找不到該廣播內容")
+
+  // 2. ── 廣播資訊字串 (與產品格式一致，方便 Admin 辨識) ──
+  const broadcastInfo = [
+    "",
+    "─── 來自廣播申請 ───",
+    `📢 廣播標題：${broadcast.title}`,
+    `📝 內容摘要：${broadcast.content.substring(0, 50)}...`, // 取前50字避免過長
+  ].join("\n")
+
+  // 3. ── 組合 title 與 description ──
+  // Title 包含：原始標題 + 來源標記
+  const finalTitle = `[廣播申請] ${broadcast.title}`
+  
+  // Description 包含：廣播全文 + 來源元數據
+  const finalDescription = `${broadcast.content}\n${broadcastInfo}`
+
+  // 4. 執行資料庫操作 (原子化操作)
+  try {
+    // 建立 Project
+    const project = await db.project.create({
+      data: {
+        title: finalTitle,
+        description: finalDescription,
+        customerId: userId,
+        status: "PENDING",
+      },
+    })
+
+    // 自動建立該任務的對話框
+    await db.conversation.create({
+      data: {
+        customerId: userId,
+        projectId: project.id,
+      },
+    })
+
+    // 5. 升級用戶為潛力客
+    const user = await db.user.findUnique({ where: { id: userId } })
+    if (user?.customerType === "NORMAL") {
+      await db.user.update({
+        where: { id: userId },
+        data: { customerType: "POTENTIAL" },
+      })
+    }
+
+    revalidatePath("/dashboard/client/products")
+    revalidatePath("/dashboard/client/broadcasts")
+    // revalidate: true // 觸發重新整理數據
+
+    return { success: true, message: "申請成功，請等待管理員審核" }
+  } catch (error) {
+    console.error("廣播申請失敗:", error)
+    throw new Error("申請過程發生錯誤，請稍後再試")
+  }
 }

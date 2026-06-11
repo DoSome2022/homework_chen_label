@@ -16,6 +16,7 @@ import { Trash2 } from "lucide-react"
 import { Product , ProductImage} from "@prisma/client"
 import { EditProductDialog } from "./EditProductDialog"
 import { useState } from "react"
+import Image from "next/image"
 
 
 interface ProductWithImages extends Pick<Product,
@@ -108,10 +109,13 @@ export function ProductTable({ products, currentSort, currentOrder }: ProductTab
                             {/* ← 新增：顯示第一張圖片 */}
               <TableCell>
                 {product.images?.[0] ? (
-                  <img
+                 <Image
                     src={product.images[0].url}
                     alt={product.name}
+                    width={56}                          // w-14 = 56px
+                    height={56}                         // h-14 = 56px
                     className="w-14 h-14 object-cover rounded border"
+                    unoptimized                         // 外部圖片（AliOSS）
                   />
                 ) : (
                   <span className="text-gray-400 text-xs">無</span>

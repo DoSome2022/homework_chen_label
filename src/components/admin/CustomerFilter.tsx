@@ -104,12 +104,12 @@ export function CustomerFilter({
   return (
     <div className="flex items-center gap-4 flex-wrap">
       {/* 搜尋輸入 */}
-      <Input
-        placeholder="搜尋姓名、電子郵件..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-64"
-      />
+<Input
+  placeholder="搜尋姓名、電子郵件、電話..."
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  className="w-64"
+/>
 
       {/* 客戶類型 */}
       <Select

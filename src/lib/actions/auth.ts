@@ -173,10 +173,11 @@ export async function verifyPhoneOtp(formData: FormData) {
   // 驗證成功 ── 刪除 OTP 記錄（一次性使用）
   await db.phoneOtp.delete({ where: { phone } });
 
-  let user = otpRecord.user;
+  // ✅ 改成 const + 直接判斷 otpRecord.user
+  const existingUser = otpRecord.user;
 
-  if (!user) {
-    user = await db.user.create({
+  if (!existingUser) {
+    const newUser = await db.user.create({
       data: {
         role: "CUSTOMER",
         customerType: "NORMAL",
@@ -185,7 +186,7 @@ export async function verifyPhoneOtp(formData: FormData) {
 
     await db.customerContact.create({
       data: {
-        customerId: user.id,
+        customerId: newUser.id,   // ✅ 使用 newUser.id
         name: "新用戶（手機註冊）",
         phone,
       },

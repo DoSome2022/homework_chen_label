@@ -321,11 +321,10 @@
 
 
 // B 可行的
-
-// src/components/admin/CustomerTable.tsx
+// src/components/admin/CustomerTable.tsx (修改版)
 'use client'
 
-import { useState } from "react"
+import { useState, useTransition } from "react"  // ✅ 加入 useTransition
 import {
   Table,
   TableBody,
@@ -337,7 +336,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { toggleCustomerType } from "@/lib/actions/admin-customer"
+import { toggleCustomerType, deleteCustomer } from "@/lib/actions/admin-customer"  // ✅ 加入 deleteCustomer
 import Link from "next/link"
 import Papa from "papaparse"
 import { Tag } from "@prisma/client"
@@ -354,14 +353,17 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { addTagToCustomer } from "@/lib/actions/tag"
 import { DroppableCell } from "./DroppableCell"
+import { Trash2, Loader2 } from "lucide-react"  // ✅ 加入 Trash2, Loader2
+import { toast } from "sonner"  // ✅ 加入 toast
 
 interface Customer {
   id: string
   name: string | null
   email: string | null
   customerType: "NORMAL" | "POTENTIAL" | string | null
-  projects: unknown[]
+  projects: { id: string }[]
   tags: { tag: Tag }[]
+  phoneOtps: { phone: string }[]  // ✅ 新增
 }
 
 interface CustomerTableProps {
@@ -369,7 +371,7 @@ interface CustomerTableProps {
   allTags: Tag[]
 }
 
-// 可拖曳的「全域標籤」元件
+// 可拖曳的「全域標籤」元件（不變）
 function DraggableTag({ tag }: { tag: Tag }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `global-${tag.id}`,
@@ -394,13 +396,13 @@ function DraggableTag({ tag }: { tag: Tag }) {
 
 export function CustomerTable({ customers, allTags }: CustomerTableProps) {
   const [selected, setSelected] = useState<string[]>([])
+  const [isPending, startTransition] = useTransition()  // ✅ 新增
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor)
   )
 
-  // 全選 / 取消全選
   const toggleAll = () => {
     if (selected.length === customers.length) {
       setSelected([])
@@ -422,9 +424,24 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
     setSelected([])
   }
 
+  // ✅ 新增：刪除單一客戶
+  const handleDelete = (customerId: string, customerName: string | null) => {
+    if (!confirm(`確定要刪除客戶「${customerName || "未命名"}」？\n此操作無法復原，該客戶的所有關聯資料（專案、對話、報價等）將一併刪除。`)) {
+      return
+    }
+
+    startTransition(async () => {
+      const result = await deleteCustomer(customerId)
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success("客戶已刪除")
+      }
+    })
+  }
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
-
     if (!over) return
 
     const activeId = active.id as string
@@ -433,7 +450,6 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
     if (activeId.startsWith("global-")) {
       tagId = activeId.replace("global-", "")
     } else {
-      // 未來若支援客戶內標籤排序，這裡可再處理
       return
     }
 
@@ -469,7 +485,6 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
           </div>
         )}
 
-        {/* 可用標籤拖曳來源區 */}
         <div className="mb-6 p-4 bg-gray-50 rounded border">
           <p className="text-sm font-medium mb-2">可用標籤（拖曳到客戶列）</p>
           <div className="flex flex-wrap gap-2">
@@ -490,6 +505,7 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
               </TableHead>
               <TableHead>姓名</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>電話</TableHead>           
               <TableHead>客戶類型</TableHead>
               <TableHead>標籤</TableHead>
               <TableHead>項目數</TableHead>
@@ -508,6 +524,12 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
                 </TableCell>
                 <TableCell className="font-medium">{customer.name || "-"}</TableCell>
                 <TableCell>{customer.email || "-"}</TableCell>
+                
+                {/* ✅ 電話欄位：從 phoneOtps 取出 */}
+                <TableCell>
+                  {customer.phoneOtps?.[0]?.phone ?? "-"}
+                </TableCell>
+
                 <TableCell>
                   <Badge variant={customer.customerType === "POTENTIAL" ? "default" : "secondary"}>
                     {customer.customerType === "POTENTIAL" ? "潛力客" : "普通客"}
@@ -520,11 +542,25 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
 
                 <TableCell>{customer.projects.length}</TableCell>
 
-                <TableCell className="space-x-2">
+                <TableCell className="space-x-2 whitespace-nowrap">
                   <Button asChild size="sm">
                     <Link href={`/dashboard/admin/customers/${customer.id}`}>
                       查看詳情
                     </Link>
+                  </Button>
+
+                  {/* ✅ 刪除按鈕 */}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDelete(customer.id, customer.name)}
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -532,7 +568,6 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
           </TableBody>
         </Table>
 
-        {/* 匯出 CSV */}
         <Button
           variant="outline"
           size="sm"
@@ -543,6 +578,7 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
                 ID: c.id,
                 姓名: c.name || "",
                 Email: c.email || "",
+                電話: c.phoneOtps?.[0]?.phone || "",  // ✅ 加入電話
                 類型: c.customerType === "POTENTIAL" ? "潛力客" : "普通客",
                 項目數: c.projects.length,
                 標籤: c.tags.map((t) => t.tag.name).join(", "),
@@ -557,7 +593,7 @@ export function CustomerTable({ customers, allTags }: CustomerTableProps) {
             URL.revokeObjectURL(url)
           }}
         >
-          匯出 CSV（含標籤）
+          匯出 CSV（含標籤與電話）
         </Button>
       </div>
     </DndContext>

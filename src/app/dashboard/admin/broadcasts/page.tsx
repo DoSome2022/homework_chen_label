@@ -1,6 +1,9 @@
 // src/app/(dashboard)/admin/broadcasts/page.tsx
+
 import { BroadcastTable } from "@/components/admin/BroadcastTable"
 import { CreateBroadcastDialog } from "@/components/admin/CreateBroadcastDialog"
+import { DailyPromotionSection } from "@/components/admin/DailyPromotionPreview"
+
 import { Button } from "@/components/ui/button"
 import db from "@/lib/db"
 
@@ -26,8 +29,9 @@ export default async function AdminBroadcastsPage({
   })
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="p-8 space-y-8">
+      {/* ── 上方操作列 ── */}
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">廣告/廣播管理</h1>
         <div className="flex items-center gap-4">
           {/* 搜尋輸入框 */}
@@ -52,7 +56,11 @@ export default async function AdminBroadcastsPage({
         </div>
       </div>
 
+      {/* ── 廣播表格 ── */}
       <BroadcastTable broadcasts={broadcasts} />
+
+      {/* ── 每日推廣區塊（預覽 + 一鍵產生） ── */}
+      <DailyPromotionSection />
     </div>
   )
 }

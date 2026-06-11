@@ -3,6 +3,7 @@
 import { ProjectTable } from "@/components/admin/ProjectTable"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import db from "@/lib/db"
+import { getProjectProgress } from "@/lib/actions/staff-message"
 
 export default async function AdminProjectsPage() {
   const [pendingProjectsData, assignedProjectsData, employeesData] = await Promise.all([
@@ -14,7 +15,7 @@ export default async function AdminProjectsPage() {
         description: true,
         status: true,
         createdAt: true,
-        deadline: true,           // 明確選擇 deadline 欄位
+        deadline: true,
         customer: {
           select: {
             id: true,
@@ -42,7 +43,7 @@ export default async function AdminProjectsPage() {
         description: true,
         status: true,
         createdAt: true,
-        deadline: true,           // 明確選擇 deadline 欄位
+        deadline: true,
         customer: {
           select: {
             id: true,
@@ -74,6 +75,13 @@ export default async function AdminProjectsPage() {
     }),
   ])
 
+  // ⭐ 取得每個已指派專案的最新進度
+  const progressMap: Record<string, Awaited<ReturnType<typeof getProjectProgress>>[0] | null> = {}
+  for (const project of assignedProjectsData) {
+    const progresses = await getProjectProgress(project.id)
+    progressMap[project.id] = progresses[0] ?? null
+  }
+
   // 員工資料清洗
   const employees = employeesData.map((e) => ({
     ...e,
@@ -82,7 +90,7 @@ export default async function AdminProjectsPage() {
     image: e.image || "",
   }))
 
-  // 專案資料清洗（包含 deadline）
+  // 專案資料清洗
   const sanitizeProjects = (projects: typeof pendingProjectsData) => {
     return projects.map((p) => ({
       id: p.id,
@@ -90,7 +98,7 @@ export default async function AdminProjectsPage() {
       description: p.description,
       status: p.status,
       createdAt: p.createdAt,
-      deadline: p.deadline,                    // 現在型別安全，已包含在 select 中
+      deadline: p.deadline,
       customer: {
         ...p.customer,
         name: p.customer.name || "未命名客戶",
@@ -133,6 +141,8 @@ export default async function AdminProjectsPage() {
             projects={assignedProjects} 
             mode="assigned" 
             employees={employees} 
+            // ⭐ 傳入進度 map
+            progressMap={progressMap}
           />
         </TabsContent>
       </Tabs>

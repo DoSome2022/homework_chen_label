@@ -4,59 +4,68 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ImageUploader } from "@/components/shared/ImageUploader"
 import { sendCustomerMessage } from "@/lib/actions/client"
+import { FileUploader } from "../shared/ImageUploader"
+
 
 export function MessageInput({ conversationId }: { conversationId: string }) {
   const [content, setContent] = useState("")
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  // ⭐ 改為陣列物件格式
+  const [attachments, setAttachments] = useState<{ url: string; name: string; type: string }[]>([])
 
-  // 直接接收 ImageUploader 回傳的 URL 陣列（通常只取最後一張）
-  const handleImageChange = (urls: string[]) => {
-    // 只保留最後一張圖片（符合單一訊息單張圖的常見需求）
-    const latestUrl = urls[urls.length - 1] || null
-    setImageUrl(latestUrl)
+  // 直接接收 FileUploader 回傳的檔案陣列
+  const handleFileChange = (files: { url: string; name: string; type: string }[]) => {
+    setAttachments(files)
   }
 
   const handleSend = async () => {
-    // 至少要有文字或圖片才能送出
-    if (!content.trim() && !imageUrl) return
+    if (!content.trim() && attachments.length === 0) return
 
     const formData = new FormData()
     formData.append("conversationId", conversationId)
     if (content.trim()) formData.append("content", content.trim())
-    if (imageUrl) formData.append("imageUrl", imageUrl)
+
+    // 只傳第一個附件
+    if (attachments.length > 0) {
+      formData.append("imageUrl", attachments[0].url)
+    }
 
     try {
       await sendCustomerMessage(formData)
-      // 清空表單
       setContent("")
-      setImageUrl(null)
+      setAttachments([])
     } catch (err) {
       console.error("發送訊息失敗", err)
       alert("發送失敗，請稍後再試")
     }
   }
 
+  // 取最新的附件來顯示佔位文字
+  // const latestAttachment = attachments[attachments.length - 1]
+
   return (
     <div className="flex flex-col gap-3 mt-4">
       <div className="flex items-end gap-2">
-        <ImageUploader
-          value={imageUrl ? [imageUrl] : []}
-          onChange={handleImageChange}           // ← 型別正確
-          onRemove={() => setImageUrl(null)}
+        <FileUploader
+          value={attachments}
+          onChange={handleFileChange}
+          onRemove={(url) => setAttachments(prev => prev.filter(f => f.url !== url))}
         />
 
         <Input
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={imageUrl ? "可為圖片加說明文字（選填）" : "輸入訊息..."}
+          placeholder={
+            attachments.length > 0
+              ? "可為附件加說明文字（選填）"
+              : "輸入訊息..."
+          }
           className="flex-1"
         />
 
         <Button
           onClick={handleSend}
-          disabled={!content.trim() && !imageUrl}
+          disabled={!content.trim() && attachments.length === 0}
         >
           送出
         </Button>

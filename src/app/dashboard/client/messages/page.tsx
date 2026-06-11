@@ -1,8 +1,10 @@
+// src/app/dashboard/client/messages/page.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { MessageInput } from "@/components/client/MessageInput";
 import Image from "next/image";
 import { getConversations } from "@/lib/actions/conversation";
@@ -31,18 +33,13 @@ interface Conversation {
 
 export default function MessagesPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  // const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Redirect 檢查
-  useEffect(() => {
-    if (status === "loading") return;
-    if (!session?.user) {
-      router.push("/dashboard/client/products");
-    }
-  }, [status, session, router]);
+
 
   // 取得所有對話
   const fetchConversations = useCallback(async () => {
@@ -88,7 +85,7 @@ export default function MessagesPage() {
       {/* ========== 左側：任務列表 ========== */}
       <div className="w-80 border-r overflow-y-auto flex-shrink-0">
         <div className="p-4 border-b">
-          <h2 className="text-lg font-bold">我的任務</h2>
+          <h2 className="text-lg font-bold">我的工單</h2>
         </div>
 
         {conversations.length === 0 ? (

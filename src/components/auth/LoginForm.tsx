@@ -1,3 +1,397 @@
+// 'use client';
+
+// import { useForm } from "react-hook-form";
+// import { zodResolver } from "@hookform/resolvers/zod";
+// import { z } from "zod";
+// import { Button } from "@/components/ui/button";
+// import { Input } from "@/components/ui/input";
+// import {
+//   Form,
+//   FormControl,
+//   FormField,
+//   FormItem,
+//   FormLabel,
+//   FormMessage,
+// } from "@/components/ui/form";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Separator } from "@/components/ui/separator";
+// import { signIn, useSession } from "next-auth/react";
+// import { useRouter } from "next/navigation";
+// import {  useEffect, useState } from "react";
+// import { requestPhoneOtp, verifyPhoneOtp } from "@/lib/actions/auth";
+// import { toast } from "sonner"; // 若已安裝 sonner，可用來顯示錯誤提示
+
+// const emailSchema = z.object({
+//   email: z.string().email("請輸入有效的電子郵件"),
+//   password: z.string().min(1, "密碼為必填"),
+// });
+
+// const phoneSchema = z.object({
+//   phone: z.string().min(8, "請輸入有效的電話號碼"),
+//   otp: z.string().length(6, "驗證碼必須為 6 位").optional(),
+// });
+
+// type LoginMode = "email" | "phone";
+
+// export default function LoginForm() {
+//   const [mode, setMode] = useState<LoginMode>("email");
+//   const [otpRequested, setOtpRequested] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
+//   const [isLoading, setIsLoading] = useState(false);
+
+//   const { data: session, status } = useSession();
+//   const router = useRouter();
+
+//   // Email 表單
+//   const emailForm = useForm<z.infer<typeof emailSchema>>({
+//     resolver: zodResolver(emailSchema),
+//     defaultValues: { email: "", password: "" },
+//   });
+
+//   // Phone 表單
+//   const phoneForm = useForm<z.infer<typeof phoneSchema>>({
+//     resolver: zodResolver(phoneSchema),
+//     defaultValues: { phone: "", otp: "" },
+//   });
+
+//   // 自動跳轉已登入用戶
+//   useEffect(() => {
+//     if (status === "authenticated" && session?.user?.role) {
+//       router.push("/dashboard");
+//     }
+//   }, [status, session, router]);
+
+
+//   const onEmailSubmit = async (data: z.infer<typeof emailSchema>) => {
+//     setIsLoading(true);
+//     setError(null);
+//     try {
+//       const result = await signIn("credentials", {
+//         email: data.email,
+//         password: data.password,
+//         redirect: false,
+//       });
+
+//       if (result?.error) {
+//         setError(result.error || "登入失敗，請檢查帳號密碼");
+//       } else {
+//         router.push("/dashboard");
+//       }
+//     } catch {
+//       // 這裡不需要 err 變數，直接忽略
+//       setError("登入過程中發生錯誤，請稍後再試");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const onRequestOtp = async () => {
+//     console.log(" is working")
+//     setIsLoading(true);
+//     setError(null);
+
+//     const phone = phoneForm.getValues("phone");
+//     const formData = new FormData();
+//     formData.append("phone", phone);
+
+//     try {
+//       const result = await requestPhoneOtp(formData);
+//       if (result.success) {
+//         setOtpRequested(true);
+//         toast.success("驗證碼已發送");
+//       }
+//     } catch (err) {
+//       // 使用 unknown 型別，並做簡單處理
+//       const errorMessage =
+//         err instanceof Error ? err.message : "無法發送驗證碼，請稍後再試";
+//       setError(errorMessage);
+//       toast.error(errorMessage);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const onVerifyOtp = async (data: z.infer<typeof phoneSchema>) => {
+//     setIsLoading(true);
+//     setError(null);
+
+//     try {
+//       const formData = new FormData();
+//       formData.append("phone", data.phone);
+//       formData.append("code", data.otp!);
+
+//       // await verifyPhoneOtp(formData);
+//       // router.push("/dashboard");
+//       // toast.success("登入成功");
+//       const result = await verifyPhoneOtp(formData);
+//   if (result.success) {
+//     // 因為 cookie 已由 server 設定，直接跳轉
+//     router.push("/dashboard");
+//     toast.success("登入成功");
+//   }
+//     } catch (err) {
+//       // 同上，使用 unknown + 型別守衛
+//       const errorMessage =
+//         err instanceof Error ? err.message : "驗證失敗，請檢查驗證碼";
+//       setError(errorMessage);
+//       toast.error(errorMessage);
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+//   const handleGoogleSignIn = async () => {
+//     setIsLoading(true);
+//     try {
+//       await signIn("google", { callbackUrl: "/dashboard", redirect: true });
+//     } catch {
+//       setError("Google 登入失敗");
+//       toast.error("Google 登入失敗");
+//     } finally {
+//       setIsLoading(false);
+//     }
+//   };
+
+// // 修改原本的 handlePhoneSubmit
+// const handlePhoneSubmit = async (e: React.FormEvent) => {
+//   e.preventDefault(); // 阻止表單預設提交刷新
+
+//   if (otpRequested) {
+//     // 【情況二：已請求 OTP】
+//     // 這裡我們希望驗證所有欄位 (包含 OTP)，所以使用 handleSubmit
+//     // handleSubmit 會處理驗證失敗的情況 (顯示錯誤訊息)
+//     await phoneForm.handleSubmit(onVerifyOtp)(e);
+//   } else {
+//     // 【情況一：尚未請求 OTP】
+//     // 我們只希望驗證 "phone" 欄位，忽略 "otp"
+//     const isPhoneValid = await phoneForm.trigger("phone");
+
+//     if (isPhoneValid) {
+//       // 只有當手機號碼格式正確時，才發送請求
+//       await onRequestOtp();
+//     }
+//   }
+// };
+
+
+
+//   if (status === "loading") {
+//     return <div className="min-h-screen flex items-center justify-center">載入中...</div>;
+//   }
+
+//   return (
+//     <div className="min-h-screen flex items-center justify-center bg-muted/40">
+//       <Card className="w-full max-w-md">
+//         <CardHeader>
+//           <CardTitle className="text-2xl text-center">登入</CardTitle>
+//         </CardHeader>
+
+//         {error && mode === "phone" && (
+//   <div className="text-destructive text-sm text-center py-2 bg-destructive/10 rounded-md">
+//     {error}
+//   </div>
+// )}
+
+//         <CardContent className="space-y-6">
+//           {error && <p className="text-destructive text-center">{error}</p>}
+
+//           {/* 登入方式切換 */}
+//           <div className="flex gap-4 justify-center">
+//             <Button
+//               variant={mode === "email" ? "default" : "outline"}
+//               onClick={() => setMode("email")}
+//             >
+//               帳號密碼
+//             </Button>
+//             <Button
+//               variant={mode === "phone" ? "default" : "outline"}
+//               onClick={() => setMode("phone")}
+//             >
+//               手機驗證碼
+//             </Button>
+//           </div>
+
+//           <Separator />
+
+//           {/* Email 登入表單 */}
+//           {mode === "email" && (
+//             <Form {...emailForm}>
+//               <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-6">
+//                 <FormField
+//                   control={emailForm.control}
+//                   name="email"
+//                   render={({ field }) => (
+//                     <FormItem>
+//                       <FormLabel>電子郵件</FormLabel>
+//                       <FormControl>
+//                         <Input type="email" {...field} />
+//                       </FormControl>
+//                       <FormMessage />
+//                     </FormItem>
+//                   )}
+//                 />
+//                 <FormField
+//                   control={emailForm.control}
+//                   name="password"
+//                   render={({ field }) => (
+//                     <FormItem>
+//                       <FormLabel>密碼</FormLabel>
+//                       <FormControl>
+//                         <Input type="password" {...field} />
+//                       </FormControl>
+//                       <FormMessage />
+//                     </FormItem>
+//                   )}
+//                 />
+//                 <Button type="submit" className="w-full" disabled={isLoading}>
+//                   {isLoading ? "登入中..." : "登入"}
+//                 </Button>
+//               </form>
+//             </Form>
+//           )}
+
+//           {/* 手機 OTP 登入表單 */}
+// {mode === "phone" && (
+//   <Form {...phoneForm}>
+//     <form
+//       onSubmit={handlePhoneSubmit}
+//       className="space-y-6"
+//     >
+//       {/* 手機號碼欄位 */}
+//       <FormField
+//         control={phoneForm.control}
+//         name="phone"
+//         render={({ field }) => (
+//           <FormItem>
+//             <FormLabel>手機號碼</FormLabel>
+//             <FormControl>
+//               <Input
+//                 type="tel"
+//                 placeholder="例如：91234567 或 +85291234567"
+//                 disabled={otpRequested || isLoading}
+//                 {...field}
+//               />
+//             </FormControl>
+//             <FormMessage />
+//           </FormItem>
+//         )}
+//       />
+
+//       {/* 發送中提示 */}
+//       {isLoading && !otpRequested && (
+//         <div className="text-sm text-muted-foreground text-center py-2">
+//           正在發送驗證碼，請稍候...
+//         </div>
+//       )}
+
+//       {/* 發送成功提示 */}
+//       {otpRequested && !isLoading && (
+//         <div className="text-sm text-green-600 font-medium text-center py-2">
+//           驗證碼已發送至您的手機
+//         </div>
+//       )}
+
+//       {/* 驗證碼輸入欄位 */}
+//       {otpRequested && (
+//         <FormField
+//           control={phoneForm.control}
+//           name="otp"
+//           render={({ field }) => (
+//             <FormItem>
+//               <FormLabel>驗證碼</FormLabel>
+//               <FormControl>
+//                 <Input
+//                   type="text"
+//                   maxLength={6}
+//                   placeholder="輸入 6 位驗證碼"
+//                   autoFocus
+//                   {...field}
+//                 />
+//               </FormControl>
+//               <FormMessage />
+//             </FormItem>
+//           )}
+//         />
+//       )}
+
+//       {/* 送出按鈕（含 loading spinner） */}
+//       <Button
+//         type="submit"
+//         className="w-full"
+//         disabled={isLoading}
+//       >
+//         {isLoading ? (
+//           <div className="flex items-center justify-center gap-2">
+//             <svg
+//               className="animate-spin h-5 w-5 text-white"
+//               xmlns="http://www.w3.org/2000/svg"
+//               fill="none"
+//               viewBox="0 0 24 24"
+//             >
+//               <circle
+//                 className="opacity-25"
+//                 cx="12"
+//                 cy="12"
+//                 r="10"
+//                 stroke="currentColor"
+//                 strokeWidth="4"
+//               />
+//               <path
+//                 className="opacity-75"
+//                 fill="currentColor"
+//                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+//               />
+//             </svg>
+//             {otpRequested ? "驗證中..." : "發送中..."}
+//           </div>
+//         ) : otpRequested ? (
+//           "驗證並登入"
+//         ) : (
+//           "取得驗證碼"
+//         )}
+//       </Button>
+
+//       {/* 驗證碼有效期提示 */}
+//       {otpRequested && (
+//         <p className="text-center text-sm text-muted-foreground">
+//           驗證碼有效期 5 分鐘
+//         </p>
+//       )}
+//     </form>
+//   </Form>
+// )}
+
+//           <div className="relative">
+//             <Separator />
+//             <div className="absolute inset-0 flex items-center justify-center">
+//               <span className="bg-card px-2 text-xs text-muted-foreground uppercase">
+//                 或
+//               </span>
+//             </div>
+//           </div>
+
+//           <Button
+//             variant="outline"
+//             className="w-full"
+//             onClick={handleGoogleSignIn}
+//             disabled={isLoading}
+//           >
+//             使用 Google 登入
+//           </Button>
+
+//           <p className="text-center text-sm text-muted-foreground">
+//             還沒有帳號？{" "}
+//             <a href="/register" className="text-primary hover:underline">
+//               註冊
+//             </a>
+//           </p>
+//         </CardContent>
+//       </Card>
+//     </div>
+//   );
+// }
+
+
 'use client';
 
 import { useForm } from "react-hook-form";
@@ -17,23 +411,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import {  useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { requestPhoneOtp, verifyPhoneOtp } from "@/lib/actions/auth";
-import { toast } from "sonner"; // 若已安裝 sonner，可用來顯示錯誤提示
+import { toast } from "sonner";
+import { useLang } from "../context/LangContext";
 
+
+// ─── Schema（驗證訊息也要雙語，但 zod 這裡先保留，後面用 t 取代錯誤顯示） ───
 const emailSchema = z.object({
-  email: z.string().email("請輸入有效的電子郵件"),
-  password: z.string().min(1, "密碼為必填"),
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 const phoneSchema = z.object({
-  phone: z.string().min(8, "請輸入有效的電話號碼"),
-  otp: z.string().length(6, "驗證碼必須為 6 位").optional(),
+  phone: z.string().min(8),
+  otp: z.string().length(6).optional(),
 });
 
 type LoginMode = "email" | "phone";
 
 export default function LoginForm() {
+  const { lang } = useLang(); // ⬅️ 新增
   const [mode, setMode] = useState<LoginMode>("email");
   const [otpRequested, setOtpRequested] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +440,80 @@ export default function LoginForm() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  // Email 表單
+  // ═══════════════ 雙語對照表 ═══════════════
+  const t = {
+    zh: {
+      login: '登入',
+      emailPassword: '帳號密碼',
+      phoneOtp: '手機驗證碼',
+      email: '電子郵件',
+      password: '密碼',
+      phone: '手機號碼',
+      phonePlaceholder: '例如：91234567 或 +85291234567',
+      otp: '驗證碼',
+      otpPlaceholder: '輸入 6 位驗證碼',
+      loginBtn: '登入',
+      loggingIn: '登入中...',
+      getOtp: '取得驗證碼',
+      verifyAndLogin: '驗證並登入',
+      sending: '發送中...',
+      verifying: '驗證中...',
+      otpSent: '驗證碼已發送至您的手機',
+      sendingOtp: '正在發送驗證碼，請稍候...',
+      otpExpiry: '驗證碼有效期 5 分鐘',
+      or: '或',
+      googleLogin: '使用 Google 登入',
+      noAccount: '還沒有帳號？',
+      register: '註冊',
+      loading: '載入中...',
+      loginFailed: '登入失敗，請檢查帳號密碼',
+      loginError: '登入過程中發生錯誤，請稍後再試',
+      otpSendFailed: '無法發送驗證碼，請稍後再試',
+      googleFailed: 'Google 登入失敗',
+      otpSentSuccess: '驗證碼已發送',
+      loginSuccess: '登入成功',
+      verifyFailed: '驗證失敗，請檢查驗證碼',
+    },
+    en: {
+      login: 'Login',
+      emailPassword: 'Email & Password',
+      phoneOtp: 'Phone OTP',
+      email: 'Email',
+      password: 'Password',
+      phone: 'Phone Number',
+      phonePlaceholder: 'e.g. 91234567 or +85291234567',
+      otp: 'OTP Code',
+      otpPlaceholder: 'Enter 6-digit code',
+      loginBtn: 'Login',
+      loggingIn: 'Logging in...',
+      getOtp: 'Get OTP',
+      verifyAndLogin: 'Verify & Login',
+      sending: 'Sending...',
+      verifying: 'Verifying...',
+      otpSent: 'OTP has been sent to your phone',
+      sendingOtp: 'Sending OTP, please wait...',
+      otpExpiry: 'OTP expires in 5 minutes',
+      or: 'Or',
+      googleLogin: 'Sign in with Google',
+      noAccount: "Don't have an account?",
+      register: 'Register',
+      loading: 'Loading...',
+      loginFailed: 'Login failed. Please check your credentials',
+      loginError: 'An error occurred. Please try again',
+      otpSendFailed: 'Failed to send OTP. Please try again',
+      googleFailed: 'Google login failed',
+      otpSentSuccess: 'OTP sent successfully',
+      loginSuccess: 'Login successful',
+      verifyFailed: 'Verification failed. Please check the code',
+    },
+  }[lang];
+
+  // ═══════════════ 表單 ═══════════════
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  // Phone 表單
   const phoneForm = useForm<z.infer<typeof phoneSchema>>({
     resolver: zodResolver(phoneSchema),
     defaultValues: { phone: "", otp: "" },
@@ -61,7 +526,7 @@ export default function LoginForm() {
     }
   }, [status, session, router]);
 
-
+  // ─── Email 登入 ───
   const onEmailSubmit = async (data: z.infer<typeof emailSchema>) => {
     setIsLoading(true);
     setError(null);
@@ -73,20 +538,19 @@ export default function LoginForm() {
       });
 
       if (result?.error) {
-        setError(result.error || "登入失敗，請檢查帳號密碼");
+        setError(result.error || t.loginFailed);
       } else {
         router.push("/dashboard");
       }
     } catch {
-      // 這裡不需要 err 變數，直接忽略
-      setError("登入過程中發生錯誤，請稍後再試");
+      setError(t.loginError);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ─── 手機 OTP ───
   const onRequestOtp = async () => {
-    console.log(" is working")
     setIsLoading(true);
     setError(null);
 
@@ -98,12 +562,11 @@ export default function LoginForm() {
       const result = await requestPhoneOtp(formData);
       if (result.success) {
         setOtpRequested(true);
-        toast.success("驗證碼已發送");
+        toast.success(t.otpSentSuccess);
       }
     } catch (err) {
-      // 使用 unknown 型別，並做簡單處理
       const errorMessage =
-        err instanceof Error ? err.message : "無法發送驗證碼，請稍後再試";
+        err instanceof Error ? err.message : t.otpSendFailed;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -120,19 +583,14 @@ export default function LoginForm() {
       formData.append("phone", data.phone);
       formData.append("code", data.otp!);
 
-      // await verifyPhoneOtp(formData);
-      // router.push("/dashboard");
-      // toast.success("登入成功");
       const result = await verifyPhoneOtp(formData);
-  if (result.success) {
-    // 因為 cookie 已由 server 設定，直接跳轉
-    router.push("/dashboard");
-    toast.success("登入成功");
-  }
+      if (result.success) {
+        router.push("/dashboard");
+        toast.success(t.loginSuccess);
+      }
     } catch (err) {
-      // 同上，使用 unknown + 型別守衛
       const errorMessage =
-        err instanceof Error ? err.message : "驗證失敗，請檢查驗證碼";
+        err instanceof Error ? err.message : t.verifyFailed;
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -140,89 +598,89 @@ export default function LoginForm() {
     }
   };
 
+  // ─── Google 登入 ───
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       await signIn("google", { callbackUrl: "/dashboard", redirect: true });
     } catch {
-      setError("Google 登入失敗");
-      toast.error("Google 登入失敗");
+      setError(t.googleFailed);
+      toast.error(t.googleFailed);
     } finally {
       setIsLoading(false);
     }
   };
 
-// 修改原本的 handlePhoneSubmit
-const handlePhoneSubmit = async (e: React.FormEvent) => {
-  e.preventDefault(); // 阻止表單預設提交刷新
+  // ─── Phone 表單提交 ───
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (otpRequested) {
-    // 【情況二：已請求 OTP】
-    // 這裡我們希望驗證所有欄位 (包含 OTP)，所以使用 handleSubmit
-    // handleSubmit 會處理驗證失敗的情況 (顯示錯誤訊息)
-    await phoneForm.handleSubmit(onVerifyOtp)(e);
-  } else {
-    // 【情況一：尚未請求 OTP】
-    // 我們只希望驗證 "phone" 欄位，忽略 "otp"
-    const isPhoneValid = await phoneForm.trigger("phone");
-
-    if (isPhoneValid) {
-      // 只有當手機號碼格式正確時，才發送請求
-      await onRequestOtp();
+    if (otpRequested) {
+      await phoneForm.handleSubmit(onVerifyOtp)(e);
+    } else {
+      const isPhoneValid = await phoneForm.trigger("phone");
+      if (isPhoneValid) {
+        await onRequestOtp();
+      }
     }
-  }
-};
+  };
 
-
-
+  // ═══════════════ Render ═══════════════
   if (status === "loading") {
-    return <div className="min-h-screen flex items-center justify-center">載入中...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        {t.loading}
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">登入</CardTitle>
+          <CardTitle className="text-2xl text-center">{t.login}</CardTitle>
         </CardHeader>
 
         {error && mode === "phone" && (
-  <div className="text-destructive text-sm text-center py-2 bg-destructive/10 rounded-md">
-    {error}
-  </div>
-)}
+          <div className="text-destructive text-sm text-center py-2 bg-destructive/10 rounded-md">
+            {error}
+          </div>
+        )}
 
         <CardContent className="space-y-6">
           {error && <p className="text-destructive text-center">{error}</p>}
 
-          {/* 登入方式切換 */}
+          {/* ─── 登入方式切換 ─── */}
           <div className="flex gap-4 justify-center">
             <Button
               variant={mode === "email" ? "default" : "outline"}
               onClick={() => setMode("email")}
             >
-              帳號密碼
+              {t.emailPassword}
             </Button>
             <Button
               variant={mode === "phone" ? "default" : "outline"}
               onClick={() => setMode("phone")}
             >
-              手機驗證碼
+              {t.phoneOtp}
             </Button>
           </div>
 
           <Separator />
 
-          {/* Email 登入表單 */}
+          {/* ─── Email 登入表單 ─── */}
           {mode === "email" && (
             <Form {...emailForm}>
-              <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-6">
+              <form
+                onSubmit={emailForm.handleSubmit(onEmailSubmit)}
+                className="space-y-6"
+              >
                 <FormField
                   control={emailForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>電子郵件</FormLabel>
+                      <FormLabel>{t.email}</FormLabel>
                       <FormControl>
                         <Input type="email" {...field} />
                       </FormControl>
@@ -235,7 +693,7 @@ const handlePhoneSubmit = async (e: React.FormEvent) => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>密碼</FormLabel>
+                      <FormLabel>{t.password}</FormLabel>
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
@@ -244,145 +702,135 @@ const handlePhoneSubmit = async (e: React.FormEvent) => {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "登入中..." : "登入"}
+                  {isLoading ? t.loggingIn : t.loginBtn}
                 </Button>
               </form>
             </Form>
           )}
 
-          {/* 手機 OTP 登入表單 */}
-{mode === "phone" && (
-  <Form {...phoneForm}>
-    <form
-      onSubmit={handlePhoneSubmit}
-      className="space-y-6"
-    >
-      {/* 手機號碼欄位 */}
-      <FormField
-        control={phoneForm.control}
-        name="phone"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>手機號碼</FormLabel>
-            <FormControl>
-              <Input
-                type="tel"
-                placeholder="例如：91234567 或 +85291234567"
-                disabled={otpRequested || isLoading}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* 發送中提示 */}
-      {isLoading && !otpRequested && (
-        <div className="text-sm text-muted-foreground text-center py-2">
-          正在發送驗證碼，請稍候...
-        </div>
-      )}
-
-      {/* 發送成功提示 */}
-      {otpRequested && !isLoading && (
-        <div className="text-sm text-green-600 font-medium text-center py-2">
-          驗證碼已發送至您的手機
-        </div>
-      )}
-
-      {/* 驗證碼輸入欄位 */}
-      {otpRequested && (
-        <FormField
-          control={phoneForm.control}
-          name="otp"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>驗證碼</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  maxLength={6}
-                  placeholder="輸入 6 位驗證碼"
-                  autoFocus
-                  {...field}
+          {/* ─── 手機 OTP 登入表單 ─── */}
+          {mode === "phone" && (
+            <Form {...phoneForm}>
+              <form onSubmit={handlePhoneSubmit} className="space-y-6">
+                <FormField
+                  control={phoneForm.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t.phone}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder={t.phonePlaceholder}
+                          disabled={otpRequested || isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+
+                {isLoading && !otpRequested && (
+                  <div className="text-sm text-muted-foreground text-center py-2">
+                    {t.sendingOtp}
+                  </div>
+                )}
+
+                {otpRequested && !isLoading && (
+                  <div className="text-sm text-green-600 font-medium text-center py-2">
+                    {t.otpSent}
+                  </div>
+                )}
+
+                {otpRequested && (
+                  <FormField
+                    control={phoneForm.control}
+                    name="otp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t.otp}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            maxLength={6}
+                            placeholder={t.otpPlaceholder}
+                            autoFocus
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      {otpRequested ? t.verifying : t.sending}
+                    </div>
+                  ) : otpRequested ? (
+                    t.verifyAndLogin
+                  ) : (
+                    t.getOtp
+                  )}
+                </Button>
+
+                {otpRequested && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    {t.otpExpiry}
+                  </p>
+                )}
+              </form>
+            </Form>
           )}
-        />
-      )}
 
-      {/* 送出按鈕（含 loading spinner） */}
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <div className="flex items-center justify-center gap-2">
-            <svg
-              className="animate-spin h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-            {otpRequested ? "驗證中..." : "發送中..."}
-          </div>
-        ) : otpRequested ? (
-          "驗證並登入"
-        ) : (
-          "取得驗證碼"
-        )}
-      </Button>
-
-      {/* 驗證碼有效期提示 */}
-      {otpRequested && (
-        <p className="text-center text-sm text-muted-foreground">
-          驗證碼有效期 5 分鐘
-        </p>
-      )}
-    </form>
-  </Form>
-)}
-
+          {/* ─── 分隔線 ─── */}
           <div className="relative">
             <Separator />
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="bg-card px-2 text-xs text-muted-foreground uppercase">
-                或
+                {t.or}
               </span>
             </div>
           </div>
 
+          {/* ─── Google 登入 ─── */}
           <Button
             variant="outline"
             className="w-full"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
-            使用 Google 登入
+            {t.googleLogin}
           </Button>
 
+          {/* ─── 註冊引導 ─── */}
           <p className="text-center text-sm text-muted-foreground">
-            還沒有帳號？{" "}
+            {t.noAccount}{" "}
             <a href="/register" className="text-primary hover:underline">
-              註冊
+              {t.register}
             </a>
           </p>
         </CardContent>

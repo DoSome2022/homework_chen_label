@@ -13,7 +13,8 @@ import {
   MessageSquare, 
   FileText, 
   Megaphone, 
-  LogOut 
+  LogOut ,
+  Receipt
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,9 +22,11 @@ import { signOut } from "next-auth/react";  // ← 使用 next-auth/react 的 si
 
 interface SidebarProps {
   role?: string | null;
+  companyName?: string;   // ← 新增：系統/公司名稱（給 ADMIN/EMPLOYEE 看）
+  userName?: string;      // ← 新增：客戶名稱（給 CUSTOMER 看）
 }
 
-export function Sidebar({ role }: SidebarProps) {
+export function Sidebar({ role , companyName, userName}: SidebarProps) {
   const pathname = usePathname();
 
   const isActive = (path: string) => pathname.startsWith(path);
@@ -36,12 +39,28 @@ export function Sidebar({ role }: SidebarProps) {
   return (
     <div className="hidden md:flex md:flex-col md:w-72 md:border-r md:bg-muted/40 md:dark:bg-muted/20">
       <div className="p-6">
-        <h2 className="text-2xl font-bold tracking-tight">CRM 系統</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          {role === "ADMIN" && "管理員"}
-          {role === "EMPLOYEE" && "員工"}
-          {role === "CUSTOMER" && "客戶"}
-        </p>
+        {role === "CUSTOMER" ? (
+          // ── 客戶看到的是「個人化標題」──
+          <>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {userName || "客戶服務中心"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              歡迎回來 👋
+            </p>
+          </>
+        ) : (
+          // ── ADMIN / EMPLOYEE 看到的是公司名稱或 CRM ──
+          <>
+            <h2 className="text-2xl font-bold tracking-tight">
+              {companyName || "標緻商標印刷有限公司"}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {role === "ADMIN" && "管理員"}
+              {role === "EMPLOYEE" && "員工"}
+            </p>
+          </>
+        )}
       </div>
 
       <Separator />
@@ -101,6 +120,20 @@ export function Sidebar({ role }: SidebarProps) {
                 label="廣播/廣告管理"
                 active={isActive("/dashboard/admin/broadcasts")}
               />
+              <SidebarLink 
+                href="/dashboard/admin/quotes" 
+                icon={<Receipt className="h-5 w-5" />}
+                label="報價單管理"
+                active={isActive("/dashboard/admin/quotes")}
+              />
+
+              <SidebarLink 
+                href="/dashboard/admin/invoices" 
+                icon={<Receipt className="h-5 w-5" />}
+                label="發票管理"
+                active={isActive("/dashboard/admin/invoices")}
+              />
+
             </>
           )}
 

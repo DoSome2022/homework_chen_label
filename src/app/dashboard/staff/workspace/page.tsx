@@ -12,7 +12,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { createStaffReport, createSalesActivity } from "@/lib/actions/staff"
-import { ImageUploader } from "@/components/shared/ImageUploader"
+import { FileUploader } from "@/components/shared/ImageUploader"
+
 
 
 // 報告表單 schema
@@ -55,15 +56,17 @@ export default function StaffWorkspacePage() {
     defaultValues: { title: "", content: "" },
   })
 
-  const [activityImage, setActivityImage] = useState<string | null>(null)
+  
+const [activityImage, setActivityImage] = useState<{ url: string; name: string; type: string } | null>(null)
 
-  const onSubmitActivity = async (data: z.infer<typeof activitySchema>) => {
+
+const onSubmitActivity = async (data: z.infer<typeof activitySchema>) => {
     const formData = new FormData()
     formData.append("title", data.title)
     formData.append("content", data.content)
-    // 若有圖片，需透過另一個 Server Action 上傳後再加入
-    // 此處簡化，假設前端先上傳圖片取得 url 再送出
-    if (activityImage) formData.append("image", activityImage) // 實際需調整
+    
+    // ✅ 傳入 activityImage.url 而非整個物件
+    if (activityImage) formData.append("image", activityImage.url)
 
     await createSalesActivity(formData)
     activityForm.reset()
@@ -170,18 +173,19 @@ export default function StaffWorkspacePage() {
                       </FormItem>
                     )}
                   />
+
                   <div>
                     <FormLabel>附加圖片（選填）</FormLabel>
-                    <ImageUploader
-                      value={activityImage ? [activityImage] : []}           // 顯示目前一張
-                      onChange={(urls) => {
-                        // 取最新一張（因為您只允許一張）
-                        const newUrl = urls[urls.length - 1];
-                        setActivityImage(newUrl || null);
+                    <FileUploader
+                      value={activityImage ? [activityImage] : []}
+                      onChange={(files) => {
+                        // files 是 { url: string; name: string; type: string }[]
+                        const lastFile = files[files.length - 1]
+                        setActivityImage(lastFile || null)
                       }}
-                      onRemove={() => setActivityImage(null)}                // 移除時清空狀態
+                      onRemove={() => setActivityImage(null)}
+                      accept="image/*"  // 限制只接受圖片
                     />
-                    {activityImage && <p className="text-sm text-green-600 mt-2">已上傳圖片</p>}
                   </div>
                   <Button type="submit">發布活動</Button>
                 </form>

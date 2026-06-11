@@ -137,15 +137,20 @@ import { createTag, updateTag, deleteTag } from "@/lib/actions/tag"
 import { Tag } from "@prisma/client"
 import { Trash2, Plus, Pencil } from "lucide-react"
 
+// interface TagManagementDialogProps {
+//   // 若父元件需要即時得知標籤變更，可傳入 refresh 回調
+//   onTagsChange?: () => Promise<void> | void
+//   // 若想在對話框內顯示所有標籤，建議從父元件傳入（避免在 client component 直接 query）
+//   // allTags?: Tag[]
+//   // 暫時使用 props 傳入的方式最乾淨
+// }
+
 interface TagManagementDialogProps {
-  // 若父元件需要即時得知標籤變更，可傳入 refresh 回調
   onTagsChange?: () => Promise<void> | void
-  // 若想在對話框內顯示所有標籤，建議從父元件傳入（避免在 client component 直接 query）
-  // allTags?: Tag[]
-  // 暫時使用 props 傳入的方式最乾淨
+  allTags: Tag[]  // ✅ 從 props 接收真實資料
 }
 
-export function TagManagementDialog({ onTagsChange }: TagManagementDialogProps) {
+export function TagManagementDialog({ onTagsChange,allTags }: TagManagementDialogProps) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [color, setColor] = useState("#e5e7eb")
@@ -153,7 +158,7 @@ export function TagManagementDialog({ onTagsChange }: TagManagementDialogProps) 
 
   // 假設 allTags 從父元件傳入，或您可在此處使用 useQuery / SWR 等工具取得
   // 為展示完整功能，此處先使用空陣列，實際使用時請從 props 傳入
-  const allTags: Tag[] = [] // ← 請替換成實際資料來源，例如 props.allTags
+  // const allTags: Tag[] = [] // ← 請替換成實際資料來源，例如 props.allTags
 
   const resetForm = () => {
     setName("")

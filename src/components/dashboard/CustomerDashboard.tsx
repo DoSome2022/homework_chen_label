@@ -2,9 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { toggleBroadcastSubscription } from "@/lib/actions/client"
+import { applyForBroadcast, toggleBroadcastSubscription } from "@/lib/actions/client"
 import Image from "next/image"
 import { useState } from "react"
+import { toast } from "sonner" // 假設你使用 sonner 顯示通知
 
 // 定義類型
 interface Broadcast {
@@ -170,7 +171,29 @@ function getYouTubeEmbedUrl(url: string) {
             ) : (
               allPublishedBroadcasts.map((broadcast) => (
                 <Card key={broadcast.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                  <CardHeader className="bg-gradient-to-r from-gray-50 to-white">
+                  <CardHeader className="bg-gradient-to-r from-gray-50 to-white relative">
+
+                          {/* --- 新增：右上角申請按鈕 --- */}
+                  <div className="absolute top-4 right-4">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="text-xs h-8 border-blue-200 text-blue-600 hover:bg-blue-50"
+                      onClick={async () => {
+                        if (!confirm("確定要針對此廣播內容提出合作申請嗎？")) return;
+                        try {
+                          await applyForBroadcast(broadcast.id);
+                          toast.success("申請已送出，請等待人員聯繫");
+                        } catch (error) {                      // ✅ 移除 :any
+                          const message = error instanceof Error ? error.message : "申請失敗"
+                          toast.error(message);
+                        }
+                      }}
+                    >
+                      申請合作
+                    </Button>
+                  </div>
+                  {/* ------------------------ */}
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-xl">{broadcast.title}</CardTitle>

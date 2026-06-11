@@ -53,13 +53,15 @@ model User {
   reports        Report[]
   conversations  Conversation[] 
   broadcasts     Broadcast[]    
+  broadcastLogs  BroadcastLog[]
   salesActivities SalesActivity[]
+ 
 
   // ── 新增這一行 ──
   customerContacts CustomerContact?   // 對應 CustomerContact.customer
   tags CustomerTag[] // 客戶擁有的標籤
   phoneOtps      PhoneOtp[]     // 一對多，可選（因為不是每個 User 都有 OTP 記錄）
-
+  progressUpdates ProjectProgress[] @relation("ProgressUpdates")
   createdAt      DateTime       @default(now())
 }
 
@@ -167,7 +169,7 @@ model Project {
   assignedEmployee    User?    @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id])
   quotes              Quote[]
   reports             Report[]
-
+  progresses ProjectProgress[]
 
   conversation        Conversation?  // 反向關聯
 
@@ -187,6 +189,7 @@ model Quote {
   project   Project @relation(fields: [projectId], references: [id])
   amount    Float
   details   String?
+  invoice   Invoice? 
   createdAt DateTime @default(now())
 }
 
@@ -217,6 +220,35 @@ model Message {
   // ▲▲▲ 請新增以上兩行 ▲▲▲
   
   senderType     SenderType?   // 新增欄位
+
+    // ⭐ 新增：支援文件附件
+  fileName  String?    // 原始檔案名稱（如 report.pdf）
+  fileSize  Int?       // 檔案大小（bytes）
+  fileType  String?    // MIME 類型（如 application/pdf）
+  // ⭐ 新增：標記特殊訊息類型
+  messageType MessageType @default(NORMAL)
+}
+
+// ⭐ 新增：訊息類型枚舉
+enum MessageType {
+  NORMAL        // 一般訊息
+  QUOTE         // 報價單
+  PROGRESS      // 進度更新
+  SYSTEM        // 系統通知
+}
+
+
+// ⭐ 新增：專案進度模型
+model ProjectProgress {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage       String   // 自定義階段名稱（如「報價中」「生產中」「已出貨」）
+  description String?  // 備註說明
+  updatedById String
+  updatedBy   User     @relation("ProgressUpdates", fields: [updatedById], references: [id])
+  createdAt   DateTime @default(now())
+  @@index([projectId, createdAt])
 }
 
 enum SenderType {
@@ -234,6 +266,45 @@ model Broadcast {
   author    User     @relation(fields: [authorId], references: [id])
   createdAt DateTime @default(now())
   scheduledAt DateTime?  // ← 新增：排程發布時間（null 表示立即發布）
+
+  isDailyPromotion Boolean @default(false)
+  broadcastLogs   BroadcastLog[]
+
+  status          BroadcastStatus  @default(DRAFT)
+  publishedAt     DateTime?        // 實際發布時間
+}
+
+enum BroadcastStatus {
+  DRAFT      // 草稿（編輯中，不會推送）
+  PUBLISHED  // 已發布（正常推送）
+  PAUSED     // 已暫停（暫停推送）
+  ARCHIVED   // 已封存（停止推送）
+}
+
+
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+enum NotificationStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+model BroadcastLog {
+  id              String             @id @default(cuid())
+  broadcastId     String
+  broadcast       Broadcast          @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  customerId      String
+  customer        User               @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel         NotificationChannel
+  status          NotificationStatus @default(PENDING)
+  errorMessage    String?            // 失敗原因
+  sentAt          DateTime?          // 實際發送時間
+  createdAt       DateTime           @default(now())
+  @@index([broadcastId, status])
+  @@index([customerId])
 }
 
 model Report {
@@ -298,4 +369,26 @@ model PhoneOtp {
   createdAt DateTime @default(now())
 
   @@index([phone, expiresAt])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+model Invoice {
+  id            String          @id @default(cuid())
+  invoiceNumber String          @unique  // 自動產生，如 INV-20250609-0001
+  quoteId       String          @unique  // 一對一：一個報價單只能轉一張發票
+  quote         Quote           @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  status        InvoiceStatus   @default(PENDING)
+  issuedDate    DateTime        @default(now())
+  dueDate       DateTime?       // 到期日
+  paidDate      DateTime?       // 付款日
+  // 可獨立修改金額（因發票可能與報價有微調）
+  amount        Float
+  details       String?         // 發票備註
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 }
