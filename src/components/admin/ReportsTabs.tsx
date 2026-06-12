@@ -74,8 +74,8 @@ function SalesReportView({
   data: SalesEmployeeData[]
   summary: { totalSales: number; totalQuotes: number; totalEmployees: number }
 }) {
-  const [selectedYear, setSelectedYear] = useState('2025')
-  const [selectedMonth, setSelectedMonth] = useState('12')
+  // const [selectedYear, setSelectedYear] = useState('2025')
+  // const [selectedMonth, setSelectedMonth] = useState('12')
   // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'name' | 'quoteCount' | 'totalAmount' | 'avgQuote'
@@ -100,7 +100,7 @@ function SalesReportView({
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
+        {/* <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} /> */}
         {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
         <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
@@ -237,8 +237,8 @@ function AmountReportView({
   data: AmountOrderData[]
   summary: { totalSales: number; avgQuote: number; quoteCount: number }
 }) {
-  const [selectedYear, setSelectedYear] = useState('2025')
-  const [selectedMonth, setSelectedMonth] = useState('12')
+  // const [selectedYear, setSelectedYear] = useState('2025')
+  // const [selectedMonth, setSelectedMonth] = useState('12')
   // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'orderNo' | 'customerName' | 'phone' | 'date' | 'customerType' | 'company' | 'amount'
@@ -268,7 +268,7 @@ function AmountReportView({
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
+        {/* <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} /> */}
         {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
         <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
@@ -325,8 +325,8 @@ function AmountReportView({
 //  📢 BROADCAST REPORT VIEW
 // ─────────────────────────────────────
 function BroadcastReportView({ data }: { data: BroadcastCampaignData[] }) {
-  const [selectedYear, setSelectedYear] = useState('2025')
-  const [selectedMonth, setSelectedMonth] = useState('12')
+  // const [selectedYear, setSelectedYear] = useState('2025')
+  // const [selectedMonth, setSelectedMonth] = useState('12')
   // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'name' | 'applications'
@@ -351,7 +351,7 @@ const list = [...data]
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
+        {/* <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} /> */}
         {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
         <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
@@ -387,8 +387,8 @@ const list = [...data]
 //  👥 EMPLOYEE REPORT VIEW
 // ─────────────────────────────────────
 function EmployeeReportView({ data }: { data: EmployeeStaffData[] }) {
-  const [selectedYear, setSelectedYear] = useState('2025')
-  const [selectedMonth, setSelectedMonth] = useState('12')
+  // const [selectedYear, setSelectedYear] = useState('2025')
+  // const [selectedMonth, setSelectedMonth] = useState('12')
   // const [searchKeyword, setSearchKeyword] = useState('')
 
   type SortKey = 'staffId' | 'name' | 'followUps' | 'quoted' | 'completed'
@@ -413,7 +413,7 @@ const list = [...data]
   return (
     <>
       <div className="flex flex-wrap items-center gap-4 mb-6">
-        <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} />
+        {/* <YearMonthSelect year={selectedYear} month={selectedMonth} onYearChange={setSelectedYear} onMonthChange={setSelectedMonth} /> */}
         {/* <SearchInput value={searchKeyword} onChange={setSearchKeyword} />
         <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">搜尋</button> */}
       </div>
@@ -455,25 +455,25 @@ const list = [...data]
 //  共用子元件
 // ═════════════════════════════════════════
 
-function YearMonthSelect({ year, month, onYearChange, onMonthChange }: {
-  year: string; month: string; onYearChange: (v: string) => void; onMonthChange: (v: string) => void
-}) {
-  return (
-    <>
-      <select value={year} onChange={e => onYearChange(e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-        <option value="2024">2024</option>
-        <option value="2025">2025</option>
-      </select>
-      <select value={month} onChange={e => onMonthChange(e.target.value)}
-        className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-        {Array.from({ length: 12 }, (_, i) => (
-          <option key={i} value={i + 1}>{i + 1}月</option>
-        ))}
-      </select>
-    </>
-  )
-}
+// function YearMonthSelect({ year, month, onYearChange, onMonthChange }: {
+//   year: string; month: string; onYearChange: (v: string) => void; onMonthChange: (v: string) => void
+// }) {
+//   return (
+//     <>
+//       <select value={year} onChange={e => onYearChange(e.target.value)}
+//         className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+//         <option value="2024">2024</option>
+//         <option value="2025">2025</option>
+//       </select>
+//       <select value={month} onChange={e => onMonthChange(e.target.value)}
+//         className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+//         {Array.from({ length: 12 }, (_, i) => (
+//           <option key={i} value={i + 1}>{i + 1}月</option>
+//         ))}
+//       </select>
+//     </>
+//   )
+// }
 
 // function SearchInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
 //   return (

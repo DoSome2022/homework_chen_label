@@ -315,15 +315,22 @@ const handleAction = async (action: string, id: string) => {
     <PinOff className="h-4 w-4" />
   )}
 </Button>
+{/* 刪除按鈕 */}
+<form action={deleteBroadcast.bind(null, broadcast.id)} className="inline">
+  <Button 
+    type="submit" 
+    variant="destructive" 
+    size="sm"
+    onClick={(e) => {
+      if (!confirm("確定要刪除此廣播？此操作無法復原。")) {
+        e.preventDefault()
+      }
+    }}
+  >
+    <Trash2 className="h-4 w-4" />
+  </Button>
+</form>
 
-                  {/* 刪除按鈕（只有草稿和封存可刪） */}
-                  {(broadcast.status === "DRAFT" || broadcast.status === "ARCHIVED") && (
-                    <form action={deleteBroadcast.bind(null, broadcast.id)} className="inline">
-                      <Button type="submit" variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </form>
-                  )}
                 </div>
               </TableCell>
             </TableRow>
