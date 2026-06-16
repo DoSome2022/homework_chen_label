@@ -144,7 +144,7 @@ export function QuoteForm({ projects, initialData, onSuccess }: QuoteFormProps) 
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>報價金額 (USD)</FormLabel>
+              <FormLabel>報價金額 </FormLabel>
               <FormControl>
                 <Input 
                   type="number" 

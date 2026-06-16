@@ -177,10 +177,9 @@ export function PrintInvoiceClient({ invoice }: { invoice: InvoiceData }) {
         {/* 公司抬頭 */}
         <div className="invoice-header">
           <div>
-            <h1 className="company-name">您的公司名稱</h1>
-            <p className="company-info">統編：XXXXXXXXXX</p>
-            <p className="company-info">電話：02-XXXX-XXXX</p>
-            <p className="company-info">地址：台北市XX區XX路XX號</p>
+            <h1 className="company-name">標緻商標印刷有限公司</h1>
+            <p className="company-info">電話：9556 5480</p>
+            <p className="company-info">地址：FLAT/RM 130, 1/F,GODFREY CENTRE, 175-185 LAI CHI KOK ROAD, SHAM SHUI PO,KLN</p>
           </div>
           <div className="invoice-number-area">
             <h2>發票</h2>
@@ -245,9 +244,9 @@ export function PrintInvoiceClient({ invoice }: { invoice: InvoiceData }) {
           <h3>付款方式</h3>
           <p>銀行匯款 / 轉帳</p>
           <div className="bank-details">
-            <p>銀行：XXX 銀行 XX 分行</p>
-            <p>帳號：1234-5678-9012-3456</p>
-            <p>戶名：您的公司名稱</p>
+            <p>銀行：南洋商業銀行</p>
+            <p>帳號：04348310286781</p>
+            <p>戶名：標緻商標印刷有限公司</p>
           </div>
         </div>
 

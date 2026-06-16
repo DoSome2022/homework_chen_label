@@ -141,9 +141,8 @@ export function PrintQuoteClient({ quote }: { quote: QuoteData }) {
         {/* 公司抬頭 */}
         <div className="quote-header">
           <div>
-            <h1 className="company-name">您的公司名稱</h1>
-            <p className="company-info">統編：XXXXXXXXXX</p>
-            <p className="company-info">電話：02-XXXX-XXXX</p>
+            <h1 className="company-name">標緻商標印刷有限公司</h1>
+            <p className="company-info">電話：9556 5480</p>
           </div>
           <div className="quote-number">
             <h2>報價單</h2>

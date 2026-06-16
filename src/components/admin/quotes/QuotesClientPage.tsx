@@ -246,7 +246,7 @@ const [editingQuote, setEditingQuote] = useState<EditQuoteData | null>(null)
               <TableHead className="w-[150px]">日期</TableHead>
               <TableHead>專案名稱</TableHead>
               <TableHead>客戶名稱</TableHead>
-              <TableHead className="text-right">金額 (USD)</TableHead>
+              <TableHead className="text-right">金額 </TableHead>
               <TableHead className="text-center">發票狀態</TableHead>
               <TableHead className="text-right">操作</TableHead>
             </TableRow>
