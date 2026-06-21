@@ -57,13 +57,13 @@
 
 
 // src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner"
 import { SessionProvider } from "next-auth/react";
 import { LangProvider } from "@/components/context/LangContext";
-
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -86,6 +86,7 @@ const globalForCron = globalThis as typeof globalThis & { __cronStarted?: boolea
 if (typeof window === "undefined" && !globalForCron.__cronStarted) {
   globalForCron.__cronStarted = true
 
+  // ✅ 正確導入 startScheduledJobs
   import("@/lib/cron").then(({ startScheduledJobs }) => {
     startScheduledJobs()
     console.log("[Cron] 排程任務已成功啟動")

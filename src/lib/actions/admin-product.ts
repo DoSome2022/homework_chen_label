@@ -180,23 +180,23 @@ import { productSchema } from "../schemas/product"
 // 若未來需要完整表單驗證，可在此定義（目前先移除未使用的 productSchema）
 // 若確定要用，可改為 export const createProductSchema = z.object({...})
 // --- 在這裡定義 formSchema ---
-const formSchema = z.object({
-  name: z.string().min(1, "請輸入產品名稱"),
-  price: z.number().min(0, "價格不可小於 0"),
-  description: z.string().optional(),
-  images: z.array(z.object({ url: z.string().url() })).min(1, "請至少上傳一張圖片"),
-  categoryId: z.string().min(1, "請選擇分類"),
-  colorId: z.string().min(1, "請選擇顏色"),
-  sizeId: z.string().min(1, "請選擇尺寸"),
-  isFeatured: z.boolean(),
-  isArchived: z.boolean(),
-  // ⭐ 新增成本欄位（全部可選）
-  costPrice: z.number().optional(),
-  materialCost: z.number().optional(),
-  laborCost: z.number().optional(),
-  otherCost: z.number().optional(),
-  supplier: z.string().optional(),
-});
+// const formSchema = z.object({
+//   name: z.string().min(1, "請輸入產品名稱"),
+//   price: z.number().min(0, "價格不可小於 0"),
+//   description: z.string().optional(),
+//   images: z.array(z.object({ url: z.string().url() })).min(1, "請至少上傳一張圖片"),
+//   categoryId: z.string().min(1, "請選擇分類"),
+//   colorId: z.string().min(1, "請選擇顏色"),
+//   sizeId: z.string().min(1, "請選擇尺寸"),
+//   isFeatured: z.boolean(),
+//   isArchived: z.boolean(),
+//   // ⭐ 新增成本欄位（全部可選）
+//   costPrice: z.number().optional(),
+//   materialCost: z.number().optional(),
+//   laborCost: z.number().optional(),
+//   otherCost: z.number().optional(),
+//   supplier: z.string().optional(),
+// });
 
 // ----------------------------
 const sanitizeId = (id: string | null | undefined) => {
@@ -304,7 +304,7 @@ export async function createProduct(values: z.infer<typeof productSchema>) {
         },
       },
     }
-    const newProduct = await db.product.create({ data: dbData })
+    // const newProduct = await db.product.create({ data: dbData })
     
     revalidatePath(`/dashboard/products`)
     return { success: "Product created!" }

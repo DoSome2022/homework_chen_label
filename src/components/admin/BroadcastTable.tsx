@@ -1,10 +1,20 @@
 // src/components/admin/BroadcastTable.tsx
 'use client'
 
+import {
+  deleteBroadcast,
+  publishBroadcast,
+  pauseBroadcast,
+  resumeBroadcast,
+  archiveBroadcast,
+  togglePinBroadcast,
+} from "@/lib/actions"  // ← 改為從 index 匯入
+
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { deleteBroadcast, publishBroadcast, pauseBroadcast, resumeBroadcast, archiveBroadcast } from "@/lib/actions/admin-broadcast"
+// import { deleteBroadcast, publishBroadcast, pauseBroadcast, resumeBroadcast, archiveBroadcast } from "@/lib/actions/admin-broadcast"
 import { Trash2, Play, Pause, Archive} from "lucide-react"
 import Image from "next/image"
 import { EditBroadcastDialog } from "./EditBroadcastDialog"
@@ -12,7 +22,7 @@ import { Broadcast } from "@prisma/client"
 import { toast } from "sonner"
 import {  useTransition } from "react"
 import { BroadcastSendLogDialog } from "./BroadcastSendLogDialog"
-import { togglePinBroadcast } from "@/lib/actions/admin-broadcast"
+// import { togglePinBroadcast } from "@/lib/actions/admin-broadcast"
 import { Pin, PinOff } from "lucide-react"
 
   // ✅ 新增

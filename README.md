@@ -70,3 +70,7 @@ admin 加了建立聯絡資訊
 - **檔案**：
   - src/lib/actions/admin-broadcast.ts
   - src/lib/actions/daily-promotion.ts
+
+
+
+  以過 run build 可deploy

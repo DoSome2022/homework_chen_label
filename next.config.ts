@@ -17,24 +17,26 @@
 
 // export default nextConfig;
 
+// next.config.ts
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      // 你確認正確的阿里雲設定 (HTTPS)
+      // 阿里雲 OSS (HTTPS)
       {
         protocol: 'https',
         hostname: 'testoss-img-pan.oss-cn-hongkong.aliyuncs.com',
-        pathname: '/**', // 建議加上這個，允許該域名下的所有路徑
+        pathname: '/**',
       },
-      // 你確認正確的阿里雲設定 (HTTP)
+      // 阿里雲 OSS (HTTP)
       {
         protocol: 'http',
         hostname: 'testoss-img-pan.oss-cn-hongkong.aliyuncs.com',
         pathname: '/**',
       },
-      // 👇 如果你需要顯示 YouTube 縮圖，必須加這兩段 👇
+      // YouTube 縮圖
       {
         protocol: 'https',
         hostname: 'img.youtube.com',
@@ -47,11 +49,59 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // 保留你原本需要的 Server Action 設定
+  
+  // 保留 Server Action 設定
   experimental: {
     serverActions: {
       bodySizeLimit: "50mb",
     },
+  },
+
+  // ✅ 新增：告訴 Next.js 這些是服務器專用的套件
+  serverExternalPackages: [
+    'twilio',
+    'nodemailer',
+    'ali-oss',
+    'urllib',
+    'any-promise',
+    'https-proxy-agent',
+  ],
+
+  // ✅ 新增：Webpack 配置，解決客戶端構建時的問題
+  webpack: (config, { isServer }) => {
+    // 只在客戶端構建時處理
+    if (!isServer) {
+      // 告訴 Webpack 這些模組在客戶端不需要被解析
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        http: false,
+        https: false,
+        os: false,
+        path: false,
+        zlib: false,
+        child_process: false,
+        // 其他可能用到的 Node.js 模組
+        buffer: false,
+        util: false,
+        url: false,
+        querystring: false,
+        assert: false,
+        events: false,
+        process: false,
+        dns: false, 
+      };
+    }
+
+    // ✅ 忽略這些模組的類型檢查（可選）
+    config.module = config.module || {};
+    config.module.exprContextCritical = false;
+    config.module.unknownContextCritical = false;
+
+    return config;
   },
 };
 

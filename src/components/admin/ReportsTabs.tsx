@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ReportTable } from "./ReportTable"
 
 import { AmountOrderData, BroadcastCampaignData, EmployeeStaffData, ProductReportData, ReportWithRelations, SalesEmployeeData } from '@/app/dashboard/admin/reports/page'
+import Image from 'next/image'
 
 
 // ─────────────────────────────────────
@@ -189,7 +190,13 @@ function ProductReportView({ data }: { data: ProductReportData[] }) {
               <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.name} className="w-10 h-10 object-cover rounded" />
+                    <Image 
+                          src={item.imageUrl} 
+                          alt={item.name} 
+                          width={40} 
+                          height={40} 
+                          className="w-10 h-10 object-cover rounded" 
+                        />
                   ) : (
                     <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-400">無</div>
                   )}

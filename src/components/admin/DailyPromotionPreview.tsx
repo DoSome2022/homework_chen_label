@@ -145,7 +145,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { previewDailyPromotion, generateDailyPromotion } from "@/lib/actions/daily-promotion"
+import { generateDailyPromotion } from "@/lib/actions"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -171,7 +171,7 @@ type PreviewData = {
 export function DailyPromotionSection({ initialPreview }: { initialPreview: PreviewData }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [preview, setPreview] = useState<PreviewData>(initialPreview)
+  const [preview] = useState<PreviewData>(initialPreview)
 
   const handleGenerate = () => {
     startTransition(async () => {
