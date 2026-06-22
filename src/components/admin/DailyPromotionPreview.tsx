@@ -139,11 +139,10 @@
 //     </Card>
 //   )
 // }
-
 // src/components/admin/DailyPromotionSection.tsx
-'use client'  // ✅ 改為客戶端組件
+'use client'
 
-import { useState, useTransition } from "react"
+import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { generateDailyPromotion } from "@/lib/actions"
 import { Button } from "@/components/ui/button"
@@ -171,7 +170,8 @@ type PreviewData = {
 export function DailyPromotionSection({ initialPreview }: { initialPreview: PreviewData }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [preview] = useState<PreviewData>(initialPreview)
+  // ✅ 直接使用 props，不要用 useState
+  const preview = initialPreview
 
   const handleGenerate = () => {
     startTransition(async () => {
@@ -179,8 +179,8 @@ export function DailyPromotionSection({ initialPreview }: { initialPreview: Prev
         const result = await generateDailyPromotion()
         
         if (result.success) {
-          toast.success("今日優惠已生成！")
-          router.refresh() // 刷新頁面
+          toast.success("今日優惠已生成並發布！")
+          router.refresh() // 刷新頁面，重新取得最新預覽
         } else {
           toast.error(result.error || "生成失敗")
         }
@@ -282,8 +282,8 @@ export function DailyPromotionSection({ initialPreview }: { initialPreview: Prev
 
         <div className="bg-muted/50 rounded-md p-3">
           <p className="text-xs text-muted-foreground">
-            💡 點擊「一鍵產生今日優惠」會立即產生或更新每日精選推廣，
-            並排程在明天早上 8:00 自動發布。
+            💡 點擊「一鍵產生今日優惠」會立即產生每日精選推廣，
+            並直接發布推送给所有客戶。
           </p>
         </div>
       </CardContent>

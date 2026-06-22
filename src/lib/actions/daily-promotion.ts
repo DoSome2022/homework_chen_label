@@ -156,15 +156,13 @@
 
 //   throw new Error("資料庫中沒有任何用戶")
 // }
-
 // src/lib/actions/daily-promotion.ts
+"use server"
 
 import db from "@/lib/db"
 import { getOnThisDay } from "@/lib/wikipedia"
-import { CACHE_TAGS } from "./admin-broadcast"  // ✅ 匯入標籤常數
+import { CACHE_TAGS } from "./admin-broadcast-utils"
 
-// ❌ 移除頂層匯入
-// import { revalidateTag } from "next/cache"
 
 const PRODUCT_COUNT = 3
 
@@ -184,7 +182,7 @@ async function safeRevalidateTag(tags: string[]) {
 }
 
 // ============================================
-// 核心業務邏輯（不包含 revalidate）
+// 核心業務邏輯
 // ============================================
 export async function generateDailyPromotionCore() {
   console.log("[DailyPromotion] 開始產生每日推廣...")
@@ -245,10 +243,7 @@ export async function generateDailyPromotionCore() {
     `---`,
   ].join("\n")
 
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(8, 0, 0, 0)
-
+  // ⭐ 修改：直接發布，不排程
   const existingPromotion = await db.broadcast.findFirst({
     where: { isDailyPromotion: true },
     orderBy: { createdAt: "desc" },
@@ -256,41 +251,58 @@ export async function generateDailyPromotionCore() {
 
   let broadcast
   if (existingPromotion) {
+    // 更新現有推廣 → 直接發布
     broadcast = await db.broadcast.update({
       where: { id: existingPromotion.id },
       data: { 
         title, 
         content, 
-        scheduledAt: tomorrow,
-        status: "DRAFT",
+        scheduledAt: null,        // ⭐ 不排程
+        status: "PUBLISHED",       // ⭐ 直接發布
+        publishedAt: new Date(),   // ⭐ 記錄發布時間
       },
     })
-    console.log(`[DailyPromotion] 更新既有推廣 ID: ${broadcast.id}`)
+    console.log(`[DailyPromotion] 更新既有推廣並發布 ID: ${broadcast.id}`)
   } else {
+    // 新增推廣 → 直接發布
     broadcast = await db.broadcast.create({
       data: {
         title,
         content,
         isDailyPromotion: true,
-        scheduledAt: tomorrow,
-        status: "DRAFT",
+        scheduledAt: null,          // ⭐ 不排程
+        status: "PUBLISHED",        // ⭐ 直接發布
+        publishedAt: new Date(),    // ⭐ 記錄發布時間
         authorId: await getSystemUserId(),
       },
     })
-    console.log(`[DailyPromotion] 新增推廣 ID: ${broadcast.id}`)
+    console.log(`[DailyPromotion] 新增推廣並發布 ID: ${broadcast.id}`)
   }
 
   return { success: true, broadcastId: broadcast.id }
 }
 
 // ============================================
-// 給使用者呼叫的（包含 revalidateTag）
+// 給使用者呼叫的（包含 revalidateTag + 發送通知）
 // ============================================
 export async function generateDailyPromotion() {
   try {
     const result = await generateDailyPromotionCore()
     
-    // ✅ 使用動態導入的 revalidateTag
+    // ✅ 背景發送通知給所有客戶（不阻塞使用者操作）
+    try {
+      const { sendBroadcastToAllCustomers } = await import('@/lib/notifications/broadcast')
+      void sendBroadcastToAllCustomers(result.broadcastId).catch((err: Error) => {
+        console.error("[DailyPromotion] 發送通知失敗:", {
+          broadcastId: result.broadcastId,
+          error: err.message,
+        })
+      })
+    } catch (importError) {
+      console.warn("[DailyPromotion] 無法載入通知模組:", importError)
+    }
+
+    // ✅ 重新驗證快取
     await safeRevalidateTag([CACHE_TAGS.BROADCASTS, CACHE_TAGS.DASHBOARD])
     
     return { 
@@ -305,26 +317,6 @@ export async function generateDailyPromotion() {
     }
   }
 }
-
-// ============================================
-// 給 Cron 呼叫的（不包含 revalidate）
-// ============================================
-// export async function generateDailyPromotionCron() {
-//   console.log("[Cron] 開始執行每日推廣生成...")
-  
-//   try {
-//     const result = await generateDailyPromotionCore()
-//     console.log("[Cron] 每日推廣生成成功:", result.broadcastId)
-//     return result
-//   } catch (error) {
-//     console.error("[Cron] 每日推廣生成失敗:", {
-//       message: error instanceof Error ? error.message : String(error),
-//       stack: error instanceof Error ? error.stack : undefined,
-//       timestamp: new Date().toISOString()
-//     })
-//     throw error
-//   }
-// }
 
 // ============================================
 // 預覽功能

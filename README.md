@@ -79,3 +79,4 @@ admin 加了建立聯絡資訊
 
 del 了自動推送
   過了run build
+  修服了推送bug 18:36

@@ -361,6 +361,8 @@
 // }
 
 // src/lib/actions/admin-broadcast.ts
+"use server"   // ← 加在第一行
+
 
 import { auth } from "@/lib/auth"
 // ❌ 移除頂層匯入
@@ -371,37 +373,40 @@ import { broadcastSchema } from "@/lib/schemas/broadcast"
 import z from "zod"
 import { sendBroadcastToAllCustomers } from "@/lib/notifications/broadcast"
 import { Prisma } from "@prisma/client"  
+import { CACHE_TAGS, safeRevalidate } from "./admin-broadcast-utils"
+
 
 // ✅ 定義標籤常數（純字串，不依賴 next/cache）
-export const CACHE_TAGS = {
-  BROADCASTS: 'broadcasts',
-  DASHBOARD: 'dashboard',
-} as const
+// export const CACHE_TAGS = {
+//   BROADCASTS: 'broadcasts',
+//   DASHBOARD: 'dashboard',
+// } as const
 
 // ✅ 輔助函數：安全執行 revalidate（動態導入）
-async function safeRevalidate(tags: string[], paths: string[] = []) {
-  try {
-    // ✅ 動態導入 next/cache，只在服務器環境中使用
-    const { revalidateTag, revalidatePath } = await import('next/cache')
+// async function safeRevalidate(tags: string[], paths: string[] = []) {
+//   try {
+//     // ✅ 動態導入 next/cache，只在服務器環境中使用
+//     const { revalidateTag, revalidatePath } = await import('next/cache')
     
-    for (const tag of tags) {
-      revalidateTag(tag)
-    }
-    for (const path of paths) {
-      revalidatePath(path)
-    }
-  } catch (error) {
-    // 如果不在服務器環境中，靜默跳過
-    console.warn('[safeRevalidate] 跳過重新驗證:', {
-      tags,
-      paths,
-      error: error instanceof Error ? error.message : String(error),
-    })
-  }
-}
+//     for (const tag of tags) {
+//       revalidateTag(tag)
+//     }
+//     for (const path of paths) {
+//       revalidatePath(path)
+//     }
+//   } catch (error) {
+//     // 如果不在服務器環境中，靜默跳過
+//     console.warn('[safeRevalidate] 跳過重新驗證:', {
+//       tags,
+//       paths,
+//       error: error instanceof Error ? error.message : String(error),
+//     })
+//   }
+// }
 
 // ───────── 建立廣播 ─────────
 export async function createBroadcast(formData: FormData) {
+  "use server" 
   const session = await auth();
   if (session?.user?.role !== "ADMIN") throw new Error("未授權");
 
@@ -481,6 +486,7 @@ export async function createBroadcast(formData: FormData) {
 
 // ───────── 更新廣播 ─────────
 export async function updateBroadcast(id: string, formData: FormData) {
+  "use server" 
   const session = await auth()
   if (session?.user?.role !== "ADMIN") {
     throw new Error("Unauthorized")
@@ -555,6 +561,7 @@ export async function updateBroadcast(id: string, formData: FormData) {
 
 // ───────── 刪除廣播 ─────────
 export async function deleteBroadcast(id: string) {
+  "use server" 
   const session = await auth()
   if (session?.user?.role !== "ADMIN") throw new Error("Unauthorized")
 
@@ -570,6 +577,7 @@ export async function deleteBroadcast(id: string) {
 
 // 發布廣播
 export async function publishBroadcast(id: string) {
+  "use server" 
   const session = await auth()
   if (session?.user?.role !== "ADMIN") throw new Error("未授權")
 
@@ -598,6 +606,7 @@ export async function publishBroadcast(id: string) {
 
 // 暫停廣播
 export async function pauseBroadcast(id: string) {
+  "use server" 
   const session = await auth()
   if (session?.user?.role !== "ADMIN") throw new Error("未授權")
 
@@ -613,6 +622,7 @@ export async function pauseBroadcast(id: string) {
 
 // 恢復廣播
 export async function resumeBroadcast(id: string) {
+  "use server" 
   const session = await auth()
   if (session?.user?.role !== "ADMIN") throw new Error("未授權")
 
@@ -628,6 +638,7 @@ export async function resumeBroadcast(id: string) {
 
 // 封存廣播
 export async function archiveBroadcast(id: string) {
+  "use server" 
   const session = await auth()
   if (session?.user?.role !== "ADMIN") throw new Error("未授權")
 
@@ -643,6 +654,7 @@ export async function archiveBroadcast(id: string) {
 
 // 切換置頂
 export async function togglePinBroadcast(id: string) {
+  "use server" 
   const session = await auth()
   if (!session || session.user?.role !== "ADMIN") {
     throw new Error("未授權")
