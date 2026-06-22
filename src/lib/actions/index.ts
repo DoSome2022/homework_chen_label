@@ -10,12 +10,12 @@ export {
   resumeBroadcast,
   archiveBroadcast,
   togglePinBroadcast,
-  checkScheduledBroadcasts,
-  checkScheduledBroadcastsCron,
+  // checkScheduledBroadcasts,
+  // checkScheduledBroadcastsCron,
 } from './admin-broadcast'
 
 export {
   generateDailyPromotion,
-  generateDailyPromotionCron,
+  // generateDailyPromotionCron,
   previewDailyPromotion,
 } from './daily-promotion'

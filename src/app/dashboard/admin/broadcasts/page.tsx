@@ -64,6 +64,7 @@
 //     </div>
 //   )
 // }
+
 // src/app/(dashboard)/admin/broadcasts/page.tsx
 
 import { BroadcastTable } from "@/components/admin/BroadcastTable"

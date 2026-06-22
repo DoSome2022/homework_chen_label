@@ -74,3 +74,8 @@ admin 加了建立聯絡資訊
 
 
   以過 run build 可deploy
+
+  // 22/6/2026
+
+del 了自動推送
+  過了run build

@@ -1,27 +1,11 @@
-// // ./next.config.ts
-// /** @type {import('next').NextConfig} */
-// const nextConfig = {
-//   images: {
-//     remotePatterns: [
-//       {
-//         protocol: 'https',
-//         hostname: 'testoss-img-pan.oss-cn-hongkong.aliyuncs.com',
-//       },
-//       {
-//         protocol: 'http',
-//         hostname: 'testoss-img-pan.oss-cn-hongkong.aliyuncs.com',
-//       },
-//     ],
-//   },
-// };
-
-// export default nextConfig;
-
 // next.config.ts
 
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // ✅ 啟用 Standalone 模式（減少部署檔案大小）
+  output: 'standalone',
+  
   images: {
     remotePatterns: [
       // 阿里雲 OSS (HTTPS)
@@ -50,14 +34,20 @@ const nextConfig: NextConfig = {
     ],
   },
   
+  // ✅ 使用 SWC 壓縮（更快、更省記憶體）
+  swcMinify: true,
+  
   // 保留 Server Action 設定
   experimental: {
     serverActions: {
       bodySizeLimit: "50mb",
     },
+    // ✅ 限制並行編譯，減少記憶體使用
+    workerThreads: false,
+    cpus: 1,
   },
 
-  // ✅ 新增：告訴 Next.js 這些是服務器專用的套件
+  // ✅ 告訴 Next.js 這些是服務器專用的套件
   serverExternalPackages: [
     'twilio',
     'nodemailer',
@@ -67,7 +57,7 @@ const nextConfig: NextConfig = {
     'https-proxy-agent',
   ],
 
-  // ✅ 新增：Webpack 配置，解決客戶端構建時的問題
+  // ✅ Webpack 配置，解決客戶端構建時的問題
   webpack: (config, { isServer }) => {
     // 只在客戶端構建時處理
     if (!isServer) {
@@ -76,6 +66,7 @@ const nextConfig: NextConfig = {
         fs: false,
         net: false,
         tls: false,
+        dns: false,
         crypto: false,
         stream: false,
         http: false,
@@ -84,7 +75,6 @@ const nextConfig: NextConfig = {
         path: false,
         zlib: false,
         child_process: false,
-        // 其他可能用到的 Node.js 模組
         buffer: false,
         util: false,
         url: false,
@@ -92,7 +82,6 @@ const nextConfig: NextConfig = {
         assert: false,
         events: false,
         process: false,
-        dns: false, 
       };
     }
 

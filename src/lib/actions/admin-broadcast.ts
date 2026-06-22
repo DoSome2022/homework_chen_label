@@ -665,69 +665,69 @@ export async function togglePinBroadcast(id: string) {
 // Cron 任務專用函數
 // ═══════════════════════════════════════════
 
-export async function checkScheduledBroadcastsCron() {
-  console.log("[Cron] 開始檢查排程廣播...")
+// export async function checkScheduledBroadcastsCron() {
+//   console.log("[Cron] 開始檢查排程廣播...")
   
-  try {
-    const now = new Date()
+//   try {
+//     const now = new Date()
     
-    const scheduledBroadcasts = await db.broadcast.findMany({
-      where: {
-        status: "DRAFT",
-        scheduledAt: {
-          lte: now,
-        },
-        isDailyPromotion: false,
-      },
-    })
+//     const scheduledBroadcasts = await db.broadcast.findMany({
+//       where: {
+//         status: "DRAFT",
+//         scheduledAt: {
+//           lte: now,
+//         },
+//         isDailyPromotion: false,
+//       },
+//     })
 
-    if (scheduledBroadcasts.length === 0) {
-      console.log("[Cron] 沒有到期的排程廣播")
-      return { success: true, published: 0 }
-    }
+//     if (scheduledBroadcasts.length === 0) {
+//       console.log("[Cron] 沒有到期的排程廣播")
+//       return { success: true, published: 0 }
+//     }
 
-    console.log(`[Cron] 找到 ${scheduledBroadcasts.length} 筆到期排程廣播`)
+//     console.log(`[Cron] 找到 ${scheduledBroadcasts.length} 筆到期排程廣播`)
 
-    let publishedCount = 0
-    for (const broadcast of scheduledBroadcasts) {
-      try {
-        await db.broadcast.update({
-          where: { id: broadcast.id },
-          data: {
-            status: "PUBLISHED",
-            publishedAt: new Date(),
-          },
-        })
+//     let publishedCount = 0
+//     for (const broadcast of scheduledBroadcasts) {
+//       try {
+//         await db.broadcast.update({
+//           where: { id: broadcast.id },
+//           data: {
+//             status: "PUBLISHED",
+//             publishedAt: new Date(),
+//           },
+//         })
         
-        console.log(`[Cron] 已發布: ${broadcast.title}`)
+//         console.log(`[Cron] 已發布: ${broadcast.title}`)
         
-        void sendBroadcastToAllCustomers(broadcast.id).catch((err) => {
-          console.error(`[Cron] 廣播 ${broadcast.id} 發送失敗:`, {
-            error: err instanceof Error ? err.message : String(err),
-            timestamp: new Date().toISOString()
-          });
-        })
+//         void sendBroadcastToAllCustomers(broadcast.id).catch((err) => {
+//           console.error(`[Cron] 廣播 ${broadcast.id} 發送失敗:`, {
+//             error: err instanceof Error ? err.message : String(err),
+//             timestamp: new Date().toISOString()
+//           });
+//         })
         
-        publishedCount++
-      } catch (error) {
-        console.error(`[Cron] 發布廣播 ${broadcast.id} 失敗:`, error)
-      }
-    }
+//         publishedCount++
+//       } catch (error) {
+//         console.error(`[Cron] 發布廣播 ${broadcast.id} 失敗:`, error)
+//       }
+//     }
 
-    console.log(`[Cron] 排程廣播檢查完成，發布了 ${publishedCount} 筆`)
+//     console.log(`[Cron] 排程廣播檢查完成，發布了 ${publishedCount} 筆`)
     
-    return { success: true, published: publishedCount }
-  } catch (error) {
-    console.error("[Cron] 檢查排程廣播失敗:", error)
-    throw error
-  }
-}
+//     return { success: true, published: publishedCount }
+//   } catch (error) {
+//     console.error("[Cron] 檢查排程廣播失敗:", error)
+//     throw error
+//   }
+// }
 
-// 給使用者使用的（包含 revalidate）
-export async function checkScheduledBroadcasts() {
-  const result = await checkScheduledBroadcastsCron()
+// // 給使用者使用的（包含 revalidate）
+// export async function checkScheduledBroadcasts() {
+//   const result = await checkScheduledBroadcastsCron()
   
-  await safeRevalidate([CACHE_TAGS.BROADCASTS, CACHE_TAGS.DASHBOARD])
+//   await safeRevalidate([CACHE_TAGS.BROADCASTS, CACHE_TAGS.DASHBOARD])
   
-  return result
-}
+//   return result
+// }

@@ -156,6 +156,7 @@
 
 //   throw new Error("資料庫中沒有任何用戶")
 // }
+
 // src/lib/actions/daily-promotion.ts
 
 import db from "@/lib/db"
@@ -308,22 +309,22 @@ export async function generateDailyPromotion() {
 // ============================================
 // 給 Cron 呼叫的（不包含 revalidate）
 // ============================================
-export async function generateDailyPromotionCron() {
-  console.log("[Cron] 開始執行每日推廣生成...")
+// export async function generateDailyPromotionCron() {
+//   console.log("[Cron] 開始執行每日推廣生成...")
   
-  try {
-    const result = await generateDailyPromotionCore()
-    console.log("[Cron] 每日推廣生成成功:", result.broadcastId)
-    return result
-  } catch (error) {
-    console.error("[Cron] 每日推廣生成失敗:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
-    })
-    throw error
-  }
-}
+//   try {
+//     const result = await generateDailyPromotionCore()
+//     console.log("[Cron] 每日推廣生成成功:", result.broadcastId)
+//     return result
+//   } catch (error) {
+//     console.error("[Cron] 每日推廣生成失敗:", {
+//       message: error instanceof Error ? error.message : String(error),
+//       stack: error instanceof Error ? error.stack : undefined,
+//       timestamp: new Date().toISOString()
+//     })
+//     throw error
+//   }
+// }
 
 // ============================================
 // 預覽功能

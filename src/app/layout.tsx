@@ -87,12 +87,12 @@ if (typeof window === "undefined" && !globalForCron.__cronStarted) {
   globalForCron.__cronStarted = true
 
   // ✅ 正確導入 startScheduledJobs
-  import("@/lib/cron").then(({ startScheduledJobs }) => {
-    startScheduledJobs()
-    console.log("[Cron] 排程任務已成功啟動")
-  }).catch((err) => {
-    console.error("[Cron] 啟動失敗:", err)
-  })
+  // import("@/lib/cron").then(({ startScheduledJobs }) => {
+  //   startScheduledJobs()
+  //   console.log("[Cron] 排程任務已成功啟動")
+  // }).catch((err) => {
+  //   console.error("[Cron] 啟動失敗:", err)
+  // })
 }
 
 export default function RootLayout({
