@@ -3,20 +3,26 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ApplyProductForm } from "@/components/client/ApplyProductForm"
-import { SearchInput } from "@/components/client/SearchInput" // 稍後建立
+import { SearchInput } from "@/components/client/SearchInput"
+
 import db from "@/lib/db"
 import Image from "next/image"
+import { DailyPromotionBanner } from "@/components/client/DailyPromotionBanner"
+
 const PAGE_SIZE = 9
+
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>  // ✅ 加入 q
+  searchParams: Promise<{ page?: string; q?: string }>
 }) {
   const session = await auth()
   if (!session?.user || session.user.role !== "CUSTOMER") redirect("/login")
+
   const params = await searchParams
   const currentPage = Math.max(1, Number(params.page) || 1)
-  const query = params.q?.trim() || ""  // ✅ 讀取搜尋關鍵字
+  const query = params.q?.trim() || ""
+
   // ── 建立搜尋過濾條件 ──
   const where = query
     ? {
@@ -26,9 +32,11 @@ export default async function ProductsPage({
         ],
       }
     : {}
+
   // ── 計算總數（含搜尋過濾）──
   const totalProducts = await db.product.count({ where })
   const totalPages = Math.ceil(totalProducts / PAGE_SIZE)
+
   // ── 查詢產品（含搜尋過濾 + 分頁）──
   const products = await db.product.findMany({
     where,
@@ -37,18 +45,48 @@ export default async function ProductsPage({
     skip: (currentPage - 1) * PAGE_SIZE,
     take: PAGE_SIZE,
   })
+
+  // ⭐ 查詢最新的每日推廣（已發布的）
+  const dailyPromotion = await db.broadcast.findFirst({
+    where: {
+      isDailyPromotion: true,
+      status: "PUBLISHED",
+    },
+    orderBy: { publishedAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      imageUrl: true,
+      publishedAt: true,
+    },
+  })
+
   return (
     <div className="p-8">
+      {/* ⭐ 每日推廣 Banner — 放在最頂部 */}
+      {dailyPromotion && (
+        <DailyPromotionBanner
+          title={dailyPromotion.title}
+          content={dailyPromotion.content}
+          imageUrl={dailyPromotion.imageUrl}
+          publishedAt={dailyPromotion.publishedAt}
+        />
+      )}
+
       <h1 className="text-3xl font-bold mb-8">產品列表</h1>
+
       {/* ✅ 搜尋輸入框 */}
       <SearchInput defaultValue={query} />
-      {/* ✅ 顯示搜尋結果提示（可選） */}
+
+      {/* ✅ 顯示搜尋結果提示 */}
       {query && (
         <p className="text-sm text-muted-foreground mb-4">
           搜尋「{query}」共 {totalProducts} 項結果
         </p>
       )}
-      {/* 產品網格（其餘不變） */}
+
+      {/* 產品網格 */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => {
           const firstImage = product.images[0]
@@ -59,10 +97,10 @@ export default async function ProductsPage({
                   <Image
                     src={firstImage.url}
                     alt={product.name}
-                    fill                                  // ← 使用 fill 填滿容器
+                    fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized                           // ← 因為是 AliOSS 外部圖片
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -84,7 +122,8 @@ export default async function ProductsPage({
           )
         })}
       </div>
-      {/* 分頁（需保留 query 參數） */}
+
+      {/* 分頁 */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-10">
           <PaginationButton
@@ -105,7 +144,6 @@ export default async function ProductsPage({
     </div>
   )
 }
-
 
 // 分頁按鈕元件
 function PaginationButton({
