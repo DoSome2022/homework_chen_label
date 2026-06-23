@@ -82,3 +82,8 @@ del 了自動推送
   修服了推送bug 18:36
 
   在user 加了 每日推
+
+  //23/6/2026
+
+  改了 注冊bug , 改了 google login 在(本地 過了) 改了auth.ts
+欠twilio 正式電話

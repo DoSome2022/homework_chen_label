@@ -11,9 +11,13 @@ import { redirect } from "next/navigation"
 import db from "../db"
 
 // 註冊表單驗證
+// 註冊表單驗證（對應前端實際欄位）
 const registerSchema = z.object({
-  name: z.string().min(2, "姓名至少 2 個字元"),
+  companyName: z.string().min(1, "請輸入公司名稱"),
+  contactPerson: z.string().min(2, "姓名至少 2 個字元"),
   email: z.string().email("請輸入有效的電子郵件"),
+  phone: z.string().min(8, "請輸入聯繫電話"),
+  address: z.string().optional(),
   password: z.string().min(6, "密碼至少 6 個字元"),
 })
 
@@ -27,13 +31,27 @@ export async function registerCustomer(formData: FormData) {
 
   const hashedPassword = await bcrypt.hash(parsed.password, 10)
 
-  await db.user.create({
+  // 步驟 1：建立 User
+  const newUser = await db.user.create({
     data: {
-      name: parsed.name,
+      name: parsed.contactPerson,       // ✅ contactPerson 對應 User.name
       email: parsed.email,
       password: hashedPassword,
       role: "CUSTOMER",
-      customerType: "NORMAL",
+      customerType: "NORMAL",          // ✅ 有公司名稱 → COMPANY
+    },
+  })
+
+  // 步驟 2：建立 CustomerContact（存公司名稱、電話、地址等）
+  await db.customerContact.create({
+    data: {
+      customerId: newUser.id,
+      name: parsed.contactPerson,
+      company: parsed.companyName,      // ✅ 存公司名稱
+      email: parsed.email,
+      phone: parsed.phone,
+      address: parsed.address || "",
+      contactPerson: parsed.contactPerson,
     },
   })
 
